@@ -75,3 +75,5 @@ Quando o backend estiver pronto, a troca principal deve ser substituir o retorno
 - `acumuladoDiario` para o grafico do Infinity Chat
 - `topicos` para o resumo das conversas
 - `overview`, `funil` e `conversasRecentes` para a visao operacional
+
+# botta-indicadores-disparos
