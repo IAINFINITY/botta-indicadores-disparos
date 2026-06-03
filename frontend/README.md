@@ -1,6 +1,6 @@
 # Frontend
 
-Interface React + Vite do dashboard Dr Bem Estar.
+Interface do dashboard em `Next.js + React + Tailwind + TypeScript`.
 
 ## Rodar local
 

@@ -1,2 +1,11 @@
 node_modules/
 dist/
+.next/
+next-scaffold-tmp/
+
+
+# Others
+
+alteracoes.txt
+contexto_atual.md
+planejamento.md

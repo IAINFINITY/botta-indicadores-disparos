@@ -1,4 +1,6 @@
-export const mockDashboardData = {
+import type { DashboardData } from "../types/dashboard";
+
+export const mockDashboardData: DashboardData = {
   updatedAt: "2026-06-02T09:30:00-03:00",
   summary: {
     disparosRealizados: 14820,
@@ -12,7 +14,7 @@ export const mockDashboardData = {
     { day: "Qua", novasConversas: 241, acumulado: 632 },
     { day: "Qui", novasConversas: 196, acumulado: 828 },
     { day: "Sex", novasConversas: 264, acumulado: 1092 },
-    { day: "Sáb", novasConversas: 151, acumulado: 1243 },
+    { day: "Sab", novasConversas: 151, acumulado: 1243 },
     { day: "Dom", novasConversas: 97, acumulado: 1340 },
   ],
   topicos: [
@@ -20,25 +22,25 @@ export const mockDashboardData = {
       name: "Agendamento de consulta",
       share: 34,
       resume:
-        "Conversas focadas em disponibilidade, confirmação de horário e retomada de pacientes que não concluíram o agendamento.",
+        "Conversas focadas em disponibilidade, confirmacao de horario e retomada de pacientes que nao concluiram o agendamento.",
     },
     {
-      name: "Dúvidas sobre tratamentos",
+      name: "Duvidas sobre tratamentos",
       share: 27,
       resume:
-        "Pacientes pedem explicações rápidas sobre procedimentos, benefícios, duração e cuidados iniciais.",
+        "Pacientes pedem explicacoes rapidas sobre procedimentos, beneficios, duracao e cuidados iniciais.",
     },
     {
-      name: "Valores e condições",
+      name: "Valores e condicoes",
       share: 21,
       resume:
-        "Pedidos de orçamento, parcelamento e comparação entre opções de atendimento ou pacote.",
+        "Pedidos de orcamento, parcelamento e comparacao entre opcoes de atendimento ou pacote.",
     },
     {
-      name: "Pós-atendimento",
+      name: "Pos-atendimento",
       share: 18,
       resume:
-        "Mensagens com feedback, orientações complementares e acompanhamento depois da consulta.",
+        "Mensagens com feedback, orientacoes complementares e acompanhamento depois da consulta.",
     },
   ],
   overview: {
@@ -58,33 +60,32 @@ export const mockDashboardData = {
       patient: "Juliana M.",
       status: "Quente",
       channel: "WhatsApp",
-      lastMessage: "Quero saber os horários disponíveis para esta semana.",
+      lastMessage: "Quero saber os horarios disponiveis para esta semana.",
       topic: "Agendamento de consulta",
       time: "09:12",
     },
     {
       patient: "Carlos R.",
-      status: "Em análise",
+      status: "Em analise",
       channel: "Infinity Chat",
-      lastMessage: "Vocês conseguem me passar uma média de valor do tratamento?",
-      topic: "Valores e condições",
+      lastMessage: "Vocês conseguem me passar uma media de valor do tratamento?",
+      topic: "Valores e condicoes",
       time: "08:46",
     },
     {
-      patient: "Patrícia S.",
+      patient: "Patricia S.",
       status: "Resolvido",
       channel: "WhatsApp",
-      lastMessage: "Obrigada, já consegui confirmar meu retorno.",
-      topic: "Pós-atendimento",
+      lastMessage: "Obrigada, ja consegui confirmar meu retorno.",
+      topic: "Pos-atendimento",
       time: "08:15",
     },
     {
       patient: "Eduardo L.",
       status: "Quente",
       channel: "Infinity Chat",
-      lastMessage:
-        "Tenho dúvida sobre como funciona o procedimento e o tempo de recuperação.",
-      topic: "Dúvidas sobre tratamentos",
+      lastMessage: "Tenho duvida sobre como funciona o procedimento e o tempo de recuperacao.",
+      topic: "Duvidas sobre tratamentos",
       time: "07:52",
     },
   ],
