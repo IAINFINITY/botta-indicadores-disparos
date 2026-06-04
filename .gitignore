@@ -3,6 +3,11 @@ dist/
 .next/
 next-scaffold-tmp/
 
+# Environment files
+.env
+.env.*
+!.env.example
+
 
 # Others
 
