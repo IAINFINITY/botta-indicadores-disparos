@@ -4,6 +4,8 @@
   color-scheme: light;
   --background: #f5efe4;
   --foreground: #20170d;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
 }
 
 @theme inline {

@@ -126,12 +126,10 @@ function BarChart({ items }: BarChartProps) {
         {items.map((item) => (
           <div key={item.day} className="grid justify-items-center gap-2">
             <div
-              className="flex w-full min-h-12 items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#2d8666,#8cc4a9)] pt-3 text-[#fff9ef] font-bold shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)]"
+              className="flex min-h-12 w-full items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#2d8666,#8cc4a9)] pt-3 font-bold text-[#fff9ef] shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)]"
               style={{ height: `${(item.acumulado / maxValue) * 100}%` }}
             >
-              <span className="text-[0.85rem] sm:text-[1rem]">
-                {formatNumber(item.acumulado)}
-              </span>
+              <span className="text-[0.85rem] sm:text-[1rem]">{formatNumber(item.acumulado)}</span>
             </div>
             <small className="text-[#6f604d]">{item.day}</small>
             <strong className="text-[#6f604d]">+{item.novasConversas}</strong>
@@ -240,27 +238,6 @@ function ConversationFeed({ items }: ConversationFeedProps) {
   );
 }
 
-function IntegrationNotes() {
-  return (
-    <aside className="rounded-[28px] border border-[rgba(55,42,24,0.12)] bg-[linear-gradient(135deg,rgba(45,63,102,0.95),rgba(32,23,13,0.9))] p-6 text-[#fff8eb] shadow-[0_18px_50px_rgba(46,30,9,0.1)] sm:p-7">
-      <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-        Integracao futura
-      </span>
-      <h3 className="m-0 font-[family-name:var(--font-display)] text-[1.4rem] leading-tight tracking-tight">
-        Payload sugerido para o backend
-      </h3>
-      <ul className="mt-4 list-disc space-y-2 pl-5 leading-6 text-[#fff8eb] opacity-90">
-        <li>`summary.disparosRealizados`</li>
-        <li>`summary.contatosInteragiram`</li>
-        <li>`summary.mediaInteracoesPorContato`</li>
-        <li>`topicos[].name`, `topicos[].share`, `topicos[].resume`</li>
-        <li>`acumuladoDiario[].novasConversas`, `acumuladoDiario[].acumulado`</li>
-        <li>`conversasRecentes[]` para o overview operacional</li>
-      </ul>
-    </aside>
-  );
-}
-
 export default function App() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -286,7 +263,7 @@ export default function App() {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : "Nao foi possivel carregar o dashboard.",
+              : "Não foi possível carregar o dashboard.",
           );
         }
       } finally {
@@ -326,7 +303,7 @@ export default function App() {
             Botta Indicadores
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
-            Nao conseguimos carregar os dados
+            Não conseguimos carregar os dados
           </h1>
           <p className="mt-4 leading-6 text-[#6f604d]">{error}</p>
           <button
@@ -353,7 +330,7 @@ export default function App() {
             Botta Indicadores
           </span>
           <h1 className={`${sectionTitleClass} text-[clamp(2rem,3vw,3rem)]`}>
-            Dashboard de disparos, conversas e overview
+            Dashboard de disparos, conversas e visão operacional
           </h1>
         </div>
 
@@ -375,29 +352,29 @@ export default function App() {
               Painel executivo
             </span>
             <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#fff9ef]">
-              JSON temporario
+              JSON temporário
             </span>
           </div>
           <h2 className="relative z-10 mt-5 max-w-[12ch] font-[family-name:var(--font-display)] text-[clamp(2.4rem,4vw,4.5rem)] leading-[1.02] tracking-tight">
             Botta Indicadores
           </h2>
           <p className="relative z-10 mt-5 max-w-[54ch] leading-6 opacity-90">
-            Dashboard de disparos, conversas e overview operacional preparado para
-            evoluir com uma fonte temporaria em JSON enquanto a persistencia nao
+            Dashboard de disparos, conversas e visão operacional preparado para
+            evoluir com uma fonte temporária em JSON enquanto a persistência não
             entra.
           </p>
         </div>
 
         <div className="flex flex-col justify-end rounded-[28px] border border-[rgba(55,42,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,234,0.92),rgba(246,232,209,0.78)),rgba(255,251,244,0.76)] p-7 shadow-[0_18px_50px_rgba(46,30,9,0.1)] backdrop-blur-[16px]">
           <span className="text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            Ultima atualizacao
+            Última atualização
           </span>
           <strong className="mt-3 font-[family-name:var(--font-display)] text-[1.65rem] leading-tight tracking-tight text-[#20170d]">
             {formatDateTime(dashboard.updatedAt)}
           </strong>
           <p className="m-0 mt-2 leading-6 text-[#20170d] opacity-85">
-            Dados servidos via API, com JSON temporario ate a camada de
-            persistencia entrar.
+            Dados servidos via API, com JSON temporário até a camada de
+            persistência entrar.
           </p>
         </div>
       </section>
@@ -406,15 +383,15 @@ export default function App() {
         <div className={panelClass}>
           <SectionHeading
             eyebrow="Botta Indicadores"
-            title="Saude da operacao de disparos"
-            description="Os indicadores principais ja estao separados para o time bater o olho e entender tracao e qualidade do contato."
+            title="Saúde da operação de disparos"
+            description="Os indicadores principais já estão separados para o time bater o olho e entender tração e qualidade do contato."
           />
 
           <div className="grid gap-3 md:grid-cols-3">
             <MetricCard
               label="Quantidade de disparos realizados"
               value={formatNumber(dashboard.summary.disparosRealizados)}
-              helper="Volume total enviado no periodo"
+              helper="Volume total enviado no período"
               accent="sun"
             />
             <MetricCard
@@ -424,7 +401,7 @@ export default function App() {
               accent="mint"
             />
             <MetricCard
-              label="Media de interacoes por contato"
+              label="Média de interações por contato"
               value={formatDecimal(dashboard.summary.mediaInteracoesPorContato)}
               helper="Indica profundidade das conversas"
               accent="coral"
@@ -435,8 +412,8 @@ export default function App() {
         <div className={panelClass}>
           <SectionHeading
             eyebrow="Infinity Chat"
-            title="Relatorio de novas conversas"
-            description="Leitura acumulativa diaria para identificar picos, sazonalidade e evolucao do volume ao longo da semana."
+            title="Relatório de novas conversas"
+            description="Leitura acumulativa diária para identificar picos, sazonalidade e evolução do volume ao longo da semana."
           />
           <BarChart items={dashboard.acumuladoDiario} />
         </div>
@@ -445,50 +422,46 @@ export default function App() {
       <section className="mb-5 grid gap-5 lg:grid-cols-2">
         <div className={panelClass}>
           <SectionHeading
-            eyebrow="Topicos tratados"
-            title="Resumo tematico das conversas"
-            description="Uma leitura rapida dos principais assuntos ajuda a orientar campanhas, atendimento humano e proximos testes."
+            eyebrow="Tópicos tratados"
+            title="Resumo temático das conversas"
+            description="Uma leitura rápida dos principais assuntos ajuda a orientar campanhas, atendimento humano e próximos testes."
           />
           <TopicList topics={dashboard.topicos} />
         </div>
 
-        <div className="grid gap-5">
-          <div className={panelClass}>
-            <SectionHeading
-              eyebrow="Overview"
-              title="Panorama operacional"
-              description="Numeros de acompanhamento para saber o que foi respondido, o que precisa de apoio humano e onde estao as oportunidades."
+        <div className={panelClass}>
+          <SectionHeading
+            eyebrow="Overview"
+            title="Panorama operacional"
+            description="Números de acompanhamento para saber o que foi respondido, o que precisa de apoio humano e onde estão as oportunidades."
+          />
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <MetricCard
+              label="Total de conversas"
+              value={formatNumber(dashboard.overview.totalConversas)}
+              helper="Base consolidada no período"
+              accent="sun"
             />
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <MetricCard
-                label="Total de conversas"
-                value={formatNumber(dashboard.overview.totalConversas)}
-                helper="Base consolidada no periodo"
-                accent="sun"
-              />
-              <MetricCard
-                label="Respondidas"
-                value={formatNumber(dashboard.overview.respondidas)}
-                helper="Fluxos concluidos ou bem encaminhados"
-                accent="mint"
-              />
-              <MetricCard
-                label="Aguardando humano"
-                value={formatNumber(dashboard.overview.aguardandoHumano)}
-                helper="Casos para atendimento do time"
-                accent="coral"
-              />
-              <MetricCard
-                label="Oportunidades"
-                value={formatNumber(dashboard.overview.oportunidades)}
-                helper="Leads aquecidos ou retomadas"
-                accent="ink"
-              />
-            </div>
+            <MetricCard
+              label="Respondidas"
+              value={formatNumber(dashboard.overview.respondidas)}
+              helper="Fluxos concluídos ou bem encaminhados"
+              accent="mint"
+            />
+            <MetricCard
+              label="Aguardando humano"
+              value={formatNumber(dashboard.overview.aguardandoHumano)}
+              helper="Casos para atendimento do time"
+              accent="coral"
+            />
+            <MetricCard
+              label="Oportunidades"
+              value={formatNumber(dashboard.overview.oportunidades)}
+              helper="Leads aquecidos ou retomadas"
+              accent="ink"
+            />
           </div>
-
-          <IntegrationNotes />
         </div>
       </section>
 
@@ -497,7 +470,7 @@ export default function App() {
           <SectionHeading
             eyebrow="Funil"
             title="Da entrega ao encaminhamento"
-            description="Uma leitura simples do funil ajuda a alinhar marketing, automacao e operacao comercial."
+            description="Uma leitura simples do funil ajuda a alinhar marketing, automação e operação comercial."
           />
           <Funnel stages={dashboard.funil} />
         </div>
@@ -506,7 +479,7 @@ export default function App() {
           <SectionHeading
             eyebrow="Conversas recentes"
             title="Fila de acompanhamento"
-            description="Bloco visual para o time entender rapidamente contexto, urgencia e assunto das ultimas interacoes."
+            description="Bloco visual para o time entender rapidamente contexto, urgência e assunto das últimas interações."
           />
           <ConversationFeed items={dashboard.conversasRecentes} />
         </div>

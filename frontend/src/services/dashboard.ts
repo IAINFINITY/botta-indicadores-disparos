@@ -6,7 +6,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   });
 
   if (!response.ok) {
-    throw new Error(`Falha ao carregar dashboard: ${response.status}`);
+    throw new Error(`Falha ao carregar o dashboard: ${response.status}`);
   }
 
   return (await response.json()) as DashboardData;
