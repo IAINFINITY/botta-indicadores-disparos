@@ -118,7 +118,7 @@ interface BarChartProps {
 }
 
 function BarChart({ items }: BarChartProps) {
-  const maxValue = Math.max(...items.map((item) => item.acumulado));
+  const maxValue = Math.max(1, ...items.map((item) => item.acumulado));
 
   return (
     <div className="rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(250,239,220,0.74))] p-3 pb-1">
@@ -178,7 +178,7 @@ interface FunnelProps {
 }
 
 function Funnel({ stages }: FunnelProps) {
-  const maxValue = Math.max(...stages.map((stage) => stage.value));
+  const maxValue = Math.max(1, ...stages.map((stage) => stage.value));
 
   return (
     <div className="grid gap-3">
@@ -263,22 +263,47 @@ function IntegrationNotes() {
 
 export default function App() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    getDashboardData().then((response) => {
-      if (active) {
-        setDashboard(response);
+    async function loadDashboard() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await getDashboardData();
+
+        if (active) {
+          setDashboard(response);
+        }
+      } catch (loadError) {
+        if (active) {
+          setDashboard(null);
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Nao foi possivel carregar o dashboard.",
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    loadDashboard();
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [retryCount]);
 
-  if (!dashboard) {
+  if (loading) {
     return (
       <main className={`${shellClass} grid min-h-screen place-items-center`}>
         <div className={`${panelClass} w-full max-w-[540px]`}>
@@ -286,11 +311,38 @@ export default function App() {
             Botta Indicadores
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
-            Carregando dashboard de conversas...
+            Carregando dashboard via API...
           </h1>
         </div>
       </main>
     );
+  }
+
+  if (error) {
+    return (
+      <main className={`${shellClass} grid min-h-screen place-items-center`}>
+        <div className={`${panelClass} w-full max-w-[540px]`}>
+          <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
+            Botta Indicadores
+          </span>
+          <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
+            Nao conseguimos carregar os dados
+          </h1>
+          <p className="mt-4 leading-6 text-[#6f604d]">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetryCount((current) => current + 1)}
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-[#20170d] px-5 py-3 text-sm font-semibold text-[#fff9ef] transition hover:bg-[#2d3f66]"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!dashboard) {
+    return null;
   }
 
   return (
@@ -307,7 +359,7 @@ export default function App() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-2 text-[0.82rem] font-semibold text-[#20170d] shadow-[0_10px_28px_rgba(46,30,9,0.08)]">
-            Mock ativo
+            API JSON ativa
           </span>
           <span className="rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-2 text-[0.82rem] font-semibold text-[#20170d] shadow-[0_10px_28px_rgba(46,30,9,0.08)]">
             Next + Tailwind + TypeScript
@@ -323,7 +375,7 @@ export default function App() {
               Painel executivo
             </span>
             <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#fff9ef]">
-              Mock validado
+              JSON temporario
             </span>
           </div>
           <h2 className="relative z-10 mt-5 max-w-[12ch] font-[family-name:var(--font-display)] text-[clamp(2.4rem,4vw,4.5rem)] leading-[1.02] tracking-tight">
@@ -331,7 +383,8 @@ export default function App() {
           </h2>
           <p className="relative z-10 mt-5 max-w-[54ch] leading-6 opacity-90">
             Dashboard de disparos, conversas e overview operacional preparado para
-            evoluir sem depender de integrações ainda.
+            evoluir com uma fonte temporaria em JSON enquanto a persistencia nao
+            entra.
           </p>
         </div>
 
@@ -343,7 +396,8 @@ export default function App() {
             {formatDateTime(dashboard.updatedAt)}
           </strong>
           <p className="m-0 mt-2 leading-6 text-[#20170d] opacity-85">
-            Dados mockados, prontos para serem substituidos pela integracao real.
+            Dados servidos via API, com JSON temporario ate a camada de
+            persistencia entrar.
           </p>
         </div>
       </section>

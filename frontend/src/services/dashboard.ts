@@ -1,10 +1,13 @@
-import { mockDashboardData } from "../data/mockData";
 import type { DashboardData } from "../types/dashboard";
 
 export async function getDashboardData(): Promise<DashboardData> {
-  await new Promise((resolve) => {
-    setTimeout(resolve, 250);
+  const response = await fetch("/api/dashboard", {
+    cache: "no-store",
   });
 
-  return mockDashboardData;
+  if (!response.ok) {
+    throw new Error(`Falha ao carregar dashboard: ${response.status}`);
+  }
+
+  return (await response.json()) as DashboardData;
 }
