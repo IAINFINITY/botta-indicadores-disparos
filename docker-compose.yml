@@ -1,9 +1,24 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: botta-indicadores-backend
+    env_file:
+      - .env
+    ports:
+      - "3333:3333"
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: dr-bem-estar-frontend
+    environment:
+      BACKEND_URL: http://backend:3333
     ports:
       - "3000:3000"
+    depends_on:
+      - backend
     restart: unless-stopped

@@ -1,19 +1,29 @@
 # Backend
 
-Pasta reservada para a futura integracao do backend.
+Base inicial da API do projeto, em `Express + TypeScript`.
 
-Sugestao de responsabilidades:
+## Rotas iniciais
 
-- API para entregar os dados consolidados ao frontend
-- jobs de scrapping das conversas do Dr Bem Estar
-- persistencia dos relatorios diarios do Infinity Chat
-- endpoint de overview com metricas, topicos e conversas recentes
+- `GET /health`
+- `GET /api/dashboard`
 
-Contrato esperado pelo frontend:
+## Rodar local
 
-- `summary`
-- `acumuladoDiario`
-- `topicos`
-- `overview`
-- `funil`
-- `conversasRecentes`
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Docker
+
+O backend tambem pode ser subido pelo `docker-compose.yml` da raiz do projeto.
+
+## Proposito da etapa atual
+
+Esta base existe para sustentar o contrato do dashboard e preparar a futura integracao com Chatwoot e IA no proprio codigo.
