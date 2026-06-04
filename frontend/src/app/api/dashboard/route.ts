@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
+import { getServerEnv } from "@/lib/serverEnv";
+import type { DashboardData } from "@/types/dashboard";
 
-const backendBaseUrl = process.env.BACKEND_URL || "http://127.0.0.1:3333";
+const backendBaseUrl = getServerEnv("BACKEND_URL", "http://127.0.0.1:3333");
+
+function toPublicDashboardData(payload: Record<string, unknown>): DashboardData {
+  return {
+    updatedAt: String(payload.updatedAt || ""),
+    summary: payload.summary as DashboardData["summary"],
+    acumuladoDiario: payload.acumuladoDiario as DashboardData["acumuladoDiario"],
+    topicos: payload.topicos as DashboardData["topicos"],
+    overview: payload.overview as DashboardData["overview"],
+    funil: payload.funil as DashboardData["funil"],
+    conversasRecentes: payload.conversasRecentes as DashboardData["conversasRecentes"],
+  };
+}
 
 export async function GET() {
   try {
@@ -9,18 +23,20 @@ export async function GET() {
     });
 
     if (!response.ok) {
+      const errorBody = (await response.text()).trim();
+
       return NextResponse.json(
         {
           ok: false,
           error: "backend_error",
-          message: "Failed to load dashboard data from backend.",
+          message: errorBody || "Failed to load dashboard data from backend.",
         },
         { status: response.status },
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const data = (await response.json()) as Record<string, unknown>;
+    return NextResponse.json(toPublicDashboardData(data));
   } catch (error) {
     return NextResponse.json(
       {

@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Botta Indicadores Disparos",
-  description: "Dashboard de disparos, conversas e visão operacional.",
+  title: "Dr. Bem Estar | Dashboard Operacional",
+  description: "Dashboard operacional com disparos, conversas e indicadores do Chatwoot.",
 };
 
 export default function RootLayout({

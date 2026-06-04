@@ -288,7 +288,7 @@ export default function App() {
             Botta Indicadores
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
-            Carregando dashboard via API...
+            Carregando dados da operacao...
           </h1>
         </div>
       </main>
@@ -303,7 +303,7 @@ export default function App() {
             Botta Indicadores
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
-            Não conseguimos carregar os dados
+            Nao conseguimos carregar o dashboard
           </h1>
           <p className="mt-4 leading-6 text-[#6f604d]">{error}</p>
           <button
@@ -336,10 +336,7 @@ export default function App() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-2 text-[0.82rem] font-semibold text-[#20170d] shadow-[0_10px_28px_rgba(46,30,9,0.08)]">
-            API JSON ativa
-          </span>
-          <span className="rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-2 text-[0.82rem] font-semibold text-[#20170d] shadow-[0_10px_28px_rgba(46,30,9,0.08)]">
-            Next + Tailwind + TypeScript
+            Chatwoot ativo
           </span>
         </div>
       </header>
@@ -352,16 +349,16 @@ export default function App() {
               Painel executivo
             </span>
             <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#fff9ef]">
-              JSON temporário
+              Dados reais
             </span>
           </div>
           <h2 className="relative z-10 mt-5 max-w-[12ch] font-[family-name:var(--font-display)] text-[clamp(2.4rem,4vw,4.5rem)] leading-[1.02] tracking-tight">
             Botta Indicadores
           </h2>
           <p className="relative z-10 mt-5 max-w-[54ch] leading-6 opacity-90">
-            Dashboard de disparos, conversas e visão operacional preparado para
-            evoluir com uma fonte temporária em JSON enquanto a persistência não
-            entra.
+            Dashboard de disparos, conversas e visão operacional conectado ao
+            Chatwoot para leitura real da operação, com foco em tração,
+            engajamento e acompanhamento das últimas interações.
           </p>
         </div>
 
@@ -373,8 +370,7 @@ export default function App() {
             {formatDateTime(dashboard.updatedAt)}
           </strong>
           <p className="m-0 mt-2 leading-6 text-[#20170d] opacity-85">
-            Dados servidos via API, com JSON temporário até a camada de
-            persistência entrar.
+            Dados servidos pela API do backend com base real do Chatwoot.
           </p>
         </div>
       </section>
@@ -411,9 +407,9 @@ export default function App() {
 
         <div className={panelClass}>
           <SectionHeading
-            eyebrow="Infinity Chat"
-            title="Relatório de novas conversas"
-            description="Leitura acumulativa diária para identificar picos, sazonalidade e evolução do volume ao longo da semana."
+            eyebrow="Chatwoot"
+            title="Evolucao das novas conversas"
+            description="Leitura acumulada para identificar picos, sazonalidade e o ritmo de crescimento do volume ao longo da janela analisada."
           />
           <BarChart items={dashboard.acumuladoDiario} />
         </div>
@@ -431,7 +427,7 @@ export default function App() {
 
         <div className={panelClass}>
           <SectionHeading
-            eyebrow="Overview"
+            eyebrow="Panorama"
             title="Panorama operacional"
             description="Números de acompanhamento para saber o que foi respondido, o que precisa de apoio humano e onde estão as oportunidades."
           />

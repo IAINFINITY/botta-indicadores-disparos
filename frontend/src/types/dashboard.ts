@@ -38,40 +38,6 @@ export interface RecentConversation {
   time: string;
 }
 
-export interface DashboardAiSeed {
-  schemaVersion: "dashboard-ai-seed-v1";
-  generatedAt: string;
-  timeZone: string;
-  modelName: string;
-  temperature: number;
-  maxOutputTokens: number;
-  trigger: {
-    senderName: string;
-    inboxName: string;
-    inboxProvider: string;
-    groupName: string;
-    text: string;
-    signature: string;
-  };
-  summary: DashboardSummary;
-  overview: OverviewSummary;
-  funil: FunnelStage[];
-  conversations: Array<{
-    id: number;
-    patient: string;
-    status: string;
-    channel: string;
-    lastMessage: string;
-    topic: string;
-    time: string;
-    triggerCreatedAt: number;
-    latestActivityAt: number;
-    contactMessageCount: number;
-    hasContactResponse: boolean;
-    waitingForHuman: boolean;
-  }>;
-}
-
 export interface DashboardData {
   updatedAt: string;
   summary: DashboardSummary;
@@ -80,5 +46,4 @@ export interface DashboardData {
   overview: OverviewSummary;
   funil: FunnelStage[];
   conversasRecentes: RecentConversation[];
-  aiContext?: DashboardAiSeed;
 }
