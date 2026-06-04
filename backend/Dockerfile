@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY prompts ./prompts
 COPY src ./src
 RUN npm run build
 
@@ -20,6 +21,7 @@ ENV HOST=0.0.0.0
 COPY package*.json ./
 RUN npm ci --omit=dev
 
+COPY prompts ./prompts
 COPY --from=build /app/dist ./dist
 
 EXPOSE 3333

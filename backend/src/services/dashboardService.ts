@@ -1,10 +1,12 @@
 import type {
   AccumulatedDay,
+  DashboardAiSeed,
   DashboardData,
   FunnelStage,
   RecentConversation,
   TopicSummary,
 } from "../types/dashboard.js";
+import { buildDashboardAiSeed, getAiConfig } from "../ai/index.js";
 import { createChatwootClient, type ChatwootConversationSummary, type ChatwootMessage } from "./chatwootClient.js";
 
 const TRIGGER_MESSAGE_TEXT = `
@@ -424,6 +426,26 @@ export async function getDashboardData(): Promise<DashboardData> {
   const topicos = buildTopics(analyzedConversations);
   const funil = buildFunil(summary);
   const conversasRecentes = buildRecentConversations(analyzedConversations);
+  const aiConfig = getAiConfig();
+  const aiContext: DashboardAiSeed = buildDashboardAiSeed({
+    generatedAt: new Date().toISOString(),
+    timeZone,
+    modelName: aiConfig.modelName,
+    temperature: aiConfig.temperature,
+    maxOutputTokens: aiConfig.maxOutputTokens,
+    trigger: {
+      senderName: "Acesso Infinity",
+      inboxName: config.inboxName,
+      inboxProvider: config.inboxProvider,
+      groupName: config.groupName,
+      text: TRIGGER_MESSAGE_TEXT.trim(),
+      signature: TRIGGER_SIGNATURE,
+    },
+    summary,
+    overview: summary.overview,
+    funil,
+    conversations: analyzedConversations,
+  });
 
   return {
     updatedAt: new Date().toISOString(),
@@ -438,5 +460,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     overview: summary.overview,
     funil,
     conversasRecentes,
+    aiContext,
   };
 }

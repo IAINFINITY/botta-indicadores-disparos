@@ -1,0 +1,18 @@
+Analise o snapshot abaixo e retorne SOMENTE um JSON valido, sem markdown, sem explicacoes e sem texto fora do contrato.
+
+Concentre a analise na conversa destacada em `conversation`.
+
+Regras de execucao
+
+- responda apenas com JSON
+- nao use markdown
+- nao inclua texto fora do objeto JSON
+- nao use campos extras alem do contrato
+- mantenha textos curtos, operacionais e consistentes
+- se faltar evidencia, use null, [] ou categoria neutra
+- se a conversa estiver fora de escopo, retorne matchedTrigger false e descreva isso de forma objetiva
+- considere matchedTrigger true quando houver no transcript uma mensagem enviada por `Acesso Infinity` cujo conteudo corresponda ao texto em `trigger.text`
+- use o transcript dentro de `conversation.transcript` como a fonte principal para essa validacao
+
+Snapshot de analise com transcript completo da conversa:
+{{snapshot}}
