@@ -1,9 +1,14 @@
 import type {
   AccumulatedDay,
+  ConversationContact,
+  ConversationThread,
   DashboardAiSeed,
   DashboardData,
   FunnelStage,
+  Last24hSummary,
   RecentConversation,
+  ThreadAuthor,
+  ThreadMessage,
   TopicSummary,
 } from "../types/dashboard.js";
 import { buildDashboardAiSeed, getAiConfig } from "../ai/index.js";
@@ -56,6 +61,8 @@ interface FilteredConversation {
   contactMessageCount: number;
   hasContactResponse: boolean;
   waitingForHuman: boolean;
+  disparoNoPeriodo: boolean;
+  interagiuNoPeriodo: boolean;
 }
 
 interface DailyWindowEntry {
@@ -236,6 +243,7 @@ async function analyzeConversation(
   client: ReturnType<typeof createChatwootClient>,
   conversation: ChatwootConversationSummary,
   timeZone: string,
+  cutoffEpochSeconds: number,
 ): Promise<FilteredConversation | null> {
   const messages = await client.getConversationMessages(conversation.id);
   if (messages.length === 0) {
@@ -255,6 +263,9 @@ async function analyzeConversation(
   const topicSource = contactMessagesAfterTrigger[0] || latestMessage;
   const triggerCreatedAt = Number(triggerMessage.created_at || conversation.created_at || latestMessage.created_at || 0);
   const latestActivityAt = Number(latestMessage.created_at || conversation.last_activity_at || conversation.updated_at || triggerCreatedAt);
+  const interagiuNoPeriodo = contactMessagesAfterTrigger.some(
+    (message) => Number(message.created_at || 0) >= cutoffEpochSeconds,
+  );
 
   return {
     id: conversation.id,
@@ -269,6 +280,8 @@ async function analyzeConversation(
     contactMessageCount: contactMessagesAfterTrigger.length,
     hasContactResponse,
     waitingForHuman,
+    disparoNoPeriodo: triggerCreatedAt >= cutoffEpochSeconds,
+    interagiuNoPeriodo,
   };
 }
 
@@ -277,10 +290,14 @@ function buildSummary(conversations: FilteredConversation[]) {
   const responded = conversations.filter((conversation) => conversation.hasContactResponse).length;
   const awaitingHuman = conversations.filter((conversation) => conversation.waitingForHuman).length;
   const responsesAfterTrigger = conversations.reduce((sum, conversation) => sum + conversation.contactMessageCount, 0);
+  const disparosNoPeriodo = conversations.filter((conversation) => conversation.disparoNoPeriodo).length;
+  const interacoesNoPeriodo = conversations.filter((conversation) => conversation.interagiuNoPeriodo).length;
 
   return {
     disparosRealizados: total,
+    disparosNoPeriodo,
     contatosInteragiram: responded,
+    interacoesNoPeriodo,
     mediaInteracoesPorContato: responded > 0 ? responsesAfterTrigger / responded : 0,
     taxaEngajamento: total > 0 ? (responded / total) * 100 : 0,
     overview: {
@@ -381,10 +398,58 @@ function isWithinLookback(conversation: ChatwootConversationSummary, cutoffEpoch
   return activity >= cutoffEpochSeconds;
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
+function clampDays(value: number, fallback: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return Math.min(90, Math.max(1, Math.floor(value)));
+}
+
+function buildLast24h(conversations: FilteredConversation[]): Last24hSummary {
+  const cutoff = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
+  const opened = conversations.filter((conversation) => conversation.triggerCreatedAt >= cutoff);
+  const chatsAbertos = opened.length;
+  const comInteracao = opened.filter((conversation) => conversation.hasContactResponse).length;
+
+  return {
+    chatsAbertos,
+    comInteracao,
+    taxaInteracao: chatsAbertos > 0 ? Number(((comInteracao / chatsAbertos) * 100).toFixed(1)) : 0,
+  };
+}
+
+function buildContatos(conversations: FilteredConversation[]): ConversationContact[] {
+  return [...conversations]
+    .sort((a, b) => b.latestActivityAt - a.latestActivityAt)
+    .slice(0, 500)
+    .map((conversation) => ({
+      id: conversation.id,
+      patient: conversation.patient,
+      status: conversation.status,
+      channel: conversation.channel,
+      lastMessage: conversation.lastMessage,
+      topic: conversation.topic,
+      time: conversation.time,
+      interacoes: conversation.contactMessageCount,
+      respondeu: conversation.hasContactResponse,
+      aguardandoHumano: conversation.waitingForHuman,
+      disparoNoPeriodo: conversation.disparoNoPeriodo,
+      interagiuNoPeriodo: conversation.interagiuNoPeriodo,
+    }));
+}
+
+function classifyThreadAuthor(message: ChatwootMessage): ThreadAuthor {
+  if (isInfinityMessage(message)) return "infinity";
+  if (isContactMessage(message)) return "contato";
+  if (Number(message.message_type ?? -1) === 2) return "sistema";
+  return "equipe";
+}
+
+export async function getDashboardData(options: { days?: number } = {}): Promise<DashboardData> {
   const config = getChatwootConfig();
   assertRequiredConfig(config);
   const timeZone = process.env.TIMEZONE || DEFAULT_TIME_ZONE;
+  const lookbackDays = clampDays(Number(options.days), config.lookbackDays);
 
   const client = createChatwootClient({
     baseUrl: config.baseUrl,
@@ -394,7 +459,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     requestTimeoutMs: config.requestTimeoutMs,
   });
 
-  const cutoffEpochSeconds = Math.floor(Date.now() / 1000) - config.lookbackDays * 24 * 60 * 60;
+  const cutoffEpochSeconds = Math.floor(Date.now() / 1000) - lookbackDays * 24 * 60 * 60;
   const candidateConversations: ChatwootConversationSummary[] = [];
 
   for (let page = 1; page <= config.maxPages; page += 1) {
@@ -416,16 +481,18 @@ export async function getDashboardData(): Promise<DashboardData> {
   }
 
   const analyzedConversations = await mapWithConcurrency(candidateConversations, 8, async (conversation) =>
-    analyzeConversation(client, conversation, timeZone),
+    analyzeConversation(client, conversation, timeZone, cutoffEpochSeconds),
   );
 
   analyzedConversations.sort((a, b) => b.latestActivityAt - a.latestActivityAt);
 
   const summary = buildSummary(analyzedConversations);
-  const acumuladoDiario = buildDailySeries(analyzedConversations, config.lookbackDays, timeZone);
+  const acumuladoDiario = buildDailySeries(analyzedConversations, lookbackDays, timeZone);
   const topicos = buildTopics(analyzedConversations);
   const funil = buildFunil(summary);
   const conversasRecentes = buildRecentConversations(analyzedConversations);
+  const ultimas24h = buildLast24h(analyzedConversations);
+  const contatos = buildContatos(analyzedConversations);
   const aiConfig = getAiConfig();
   const aiContext: DashboardAiSeed = buildDashboardAiSeed({
     generatedAt: new Date().toISOString(),
@@ -449,17 +516,57 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   return {
     updatedAt: new Date().toISOString(),
+    periodoDias: lookbackDays,
     summary: {
       disparosRealizados: summary.disparosRealizados,
+      disparosNoPeriodo: summary.disparosNoPeriodo,
       contatosInteragiram: summary.contatosInteragiram,
+      interacoesNoPeriodo: summary.interacoesNoPeriodo,
       mediaInteracoesPorContato: Number(summary.mediaInteracoesPorContato.toFixed(1)),
       taxaEngajamento: Number(summary.taxaEngajamento.toFixed(1)),
     },
+    ultimas24h,
     acumuladoDiario,
     topicos,
     overview: summary.overview,
     funil,
     conversasRecentes,
+    contatos,
     aiContext,
+  };
+}
+
+export async function getConversationThread(conversationId: number): Promise<ConversationThread> {
+  const config = getChatwootConfig();
+  assertRequiredConfig(config);
+  const timeZone = process.env.TIMEZONE || DEFAULT_TIME_ZONE;
+
+  const client = createChatwootClient({
+    baseUrl: config.baseUrl,
+    apiToken: config.apiToken,
+    accountId: config.accountId,
+    inboxId: config.inboxId,
+    requestTimeoutMs: config.requestTimeoutMs,
+  });
+
+  const messages = await client.getConversationMessages(conversationId);
+  const sorted = [...messages].sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0));
+
+  const threadMessages: ThreadMessage[] = sorted
+    .map((message) => ({
+      id: Number(message.id || 0),
+      author: classifyThreadAuthor(message),
+      content: getMessageContent(message),
+      time: formatDateTime(Number(message.created_at || 0), timeZone),
+    }))
+    .filter((message) => message.content.length > 0);
+
+  const patient =
+    sorted.find((message) => isContactMessage(message))?.sender?.name?.trim() || "Contato sem nome";
+
+  return {
+    conversationId,
+    patient,
+    messages: threadMessages,
   };
 }

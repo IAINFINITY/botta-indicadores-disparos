@@ -1,4 +1,4 @@
-import type { DashboardData } from "../types/dashboard";
+import type { ConversationThread, DashboardData } from "../types/dashboard";
 
 interface ApiErrorBody {
   message?: string;
@@ -21,8 +21,9 @@ function isDashboardData(value: unknown): value is DashboardData {
   );
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
-  const response = await fetch("/api/dashboard", {
+export async function getDashboardData(days?: number): Promise<DashboardData> {
+  const query = days && Number.isFinite(days) ? `?days=${days}` : "";
+  const response = await fetch(`/api/dashboard${query}`, {
     cache: "no-store",
   });
 
@@ -38,4 +39,17 @@ export async function getDashboardData(): Promise<DashboardData> {
   }
 
   return payload;
+}
+
+export async function getConversationThread(id: number): Promise<ConversationThread> {
+  const response = await fetch(`/api/conversations/${id}/messages`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    throw new Error(errorBody?.message || `Falha ao carregar a conversa: ${response.status}`);
+  }
+
+  return (await response.json()) as ConversationThread;
 }

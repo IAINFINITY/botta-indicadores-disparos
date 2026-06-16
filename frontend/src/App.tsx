@@ -1,23 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getDashboardData } from "./services/dashboard";
+import { useCallback, useEffect, useState } from "react";
+import { getConversationThread, getDashboardData } from "./services/dashboard";
 import type {
   AccumulatedDay,
+  ConversationContact,
+  ConversationThread,
   DashboardData,
   FunnelStage,
   RecentConversation,
+  ThreadAuthor,
+  ThreadMessage,
   TopicSummary,
 } from "./types/dashboard";
 
+const PERIOD_OPTIONS: { label: string; days: number }[] = [
+  { label: "24h", days: 1 },
+  { label: "7 dias", days: 7 },
+  { label: "30 dias", days: 30 },
+];
+
+type DrilldownView = "disparos" | "interacoes" | "engajados" | "oportunidades";
+
+const DRILLDOWN_META: Record<DrilldownView, { eyebrow: string; noun: string }> = {
+  disparos: { eyebrow: "Disparos realizados", noun: "disparos enviados no período" },
+  interacoes: { eyebrow: "Interações no período", noun: "contatos que interagiram no período" },
+  engajados: { eyebrow: "Clientes engajados", noun: "contatos que interagiram" },
+  oportunidades: { eyebrow: "Oportunidades", noun: "leads em aberto" },
+};
+
+function filterContacts(view: DrilldownView, contacts: ConversationContact[]): ConversationContact[] {
+  if (view === "disparos") {
+    return contacts.filter((contact) => contact.disparoNoPeriodo);
+  }
+  if (view === "interacoes") {
+    return contacts.filter((contact) => contact.interagiuNoPeriodo);
+  }
+  if (view === "engajados") {
+    return contacts.filter((contact) => contact.respondeu);
+  }
+  if (view === "oportunidades") {
+    return contacts.filter((contact) => !contact.aguardandoHumano);
+  }
+  return contacts;
+}
+
+const STATUS_LEGEND: { status: string; meaning: string }[] = [
+  { status: "quente", meaning: "ainda sem resposta do contato" },
+  { status: "em análise", meaning: "respondeu e aguarda atendimento humano" },
+  { status: "resolvido", meaning: "respondeu e fluxo encaminhado" },
+];
+
 const shellClass =
-  "mx-auto w-full max-w-[1240px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8";
+  "mx-auto w-full max-w-[1240px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8";
 const panelClass =
-  "rounded-[28px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,251,244,0.76)] p-6 shadow-[0_18px_50px_rgba(46,30,9,0.1)] backdrop-blur-[16px] sm:p-7";
+  "rounded-[24px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,251,244,0.78)] p-5 shadow-[0_14px_40px_rgba(46,30,9,0.08)] backdrop-blur-[12px] sm:p-6";
 const softCardClass =
-  "rounded-[22px] border border-[rgba(32,23,13,0.08)] bg-[#fff9f0] p-5";
+  "rounded-[18px] border border-[rgba(32,23,13,0.08)] bg-[#fff9f0] p-4 sm:p-5";
 const sectionTitleClass =
-  "font-[family-name:var(--font-display)] text-[clamp(1.6rem,2.4vw,2.4rem)] leading-[1.05] tracking-tight text-[#20170d]";
+  "font-[family-name:var(--font-display)] text-[clamp(1.35rem,2.2vw,1.9rem)] leading-[1.1] tracking-tight text-[#20170d]";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
@@ -34,6 +75,15 @@ function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "full",
     timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatShortDateTime(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
@@ -82,16 +132,292 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, helper, accent }: MetricCardProps) {
   return (
-    <article className={`${softCardClass} min-h-[170px]`}>
-      <div className={`mb-4 h-1.5 w-14 rounded-full ${getAccentBarClass(accent)}`} />
-      <div className="flex h-[calc(100%-1rem)] flex-col justify-between">
-        <span className="text-[0.95rem] leading-6 text-[#6f604d]">{label}</span>
-        <strong className="my-4 font-[family-name:var(--font-display)] text-[clamp(2rem,2vw,2.8rem)] leading-none tracking-tight text-[#20170d]">
-          {value}
-        </strong>
-        <span className="text-[0.95rem] leading-6 text-[#6f604d]">{helper}</span>
-      </div>
+    <article className={softCardClass}>
+      <div className={`mb-3 h-1.5 w-10 rounded-full ${getAccentBarClass(accent)}`} />
+      <span className="block text-[0.82rem] leading-5 text-[#6f604d]">{label}</span>
+      <strong className="my-2 block font-[family-name:var(--font-display)] text-[clamp(1.6rem,4vw,2.1rem)] leading-none tracking-tight text-[#20170d]">
+        {value}
+      </strong>
+      <span className="block text-[0.8rem] leading-5 text-[#6f604d]">{helper}</span>
     </article>
+  );
+}
+
+interface KpiCardProps {
+  label: string;
+  value: string;
+  helper: string;
+  accent: "sun" | "mint" | "coral" | "ink";
+  onClick?: () => void;
+  actionLabel?: string;
+}
+
+function KpiCard({ label, value, helper, accent, onClick, actionLabel }: KpiCardProps) {
+  const inner = (
+    <>
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${getAccentBarClass(accent)}`} />
+        <span className="text-[0.72rem] font-semibold uppercase leading-tight tracking-[0.08em] text-[#6f604d]">
+          {label}
+        </span>
+      </div>
+      <strong className="mt-3 block font-[family-name:var(--font-display)] text-[clamp(1.7rem,5vw,2.3rem)] leading-none tracking-tight text-[#20170d]">
+        {value}
+      </strong>
+      <span className="mt-2 block text-[0.82rem] leading-5 text-[#6f604d]">{helper}</span>
+      {actionLabel ? (
+        <span className="mt-2 inline-flex items-center gap-1 text-[0.78rem] font-semibold text-[#2d8666]">
+          {actionLabel} <span aria-hidden>→</span>
+        </span>
+      ) : null}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${softCardClass} w-full cursor-pointer text-left transition hover:border-[#2d8666] hover:shadow-[0_12px_30px_rgba(45,134,102,0.18)]`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <article className={softCardClass}>{inner}</article>;
+}
+
+interface PeriodFilterProps {
+  value: number;
+  busy: boolean;
+  onChange: (days: number) => void;
+}
+
+function PeriodFilter({ value, busy, onChange }: PeriodFilterProps) {
+  return (
+    <div className="inline-flex items-center rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] p-1">
+      {PERIOD_OPTIONS.map((option) => {
+        const active = option.days === value;
+        return (
+          <button
+            key={option.days}
+            type="button"
+            onClick={() => onChange(option.days)}
+            disabled={busy}
+            aria-pressed={active}
+            className={`rounded-full px-3 py-1.5 text-[0.78rem] font-semibold transition disabled:opacity-60 ${
+              active ? "bg-[#20170d] text-[#fff9ef]" : "text-[#6f604d] hover:text-[#20170d]"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function getThreadAuthorMeta(author: ThreadAuthor): { label: string; bubble: string; row: string } {
+  switch (author) {
+    case "infinity":
+      return { label: "Dr. Bem Estar (IA)", bubble: "bg-[#2d8666] text-[#fff9ef]", row: "justify-end" };
+    case "equipe":
+      return { label: "Equipe", bubble: "bg-[#2d3f66] text-[#fff9ef]", row: "justify-end" };
+    case "sistema":
+      return { label: "Sistema", bubble: "bg-[rgba(32,23,13,0.06)] text-[#6f604d]", row: "justify-center" };
+    case "contato":
+    default:
+      return { label: "Cliente", bubble: "bg-[#fff3df] text-[#20170d]", row: "justify-start" };
+  }
+}
+
+function StatusLegend() {
+  return (
+    <div className="mb-3 grid gap-1.5 rounded-[14px] border border-[rgba(55,42,24,0.1)] bg-[#fffaf1] p-3">
+      {STATUS_LEGEND.map((item) => (
+        <div key={item.status} className="flex items-center gap-2 text-[0.78rem] text-[#6f604d]">
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${getStatusClass(item.status)}`}
+          >
+            {item.status}
+          </span>
+          <span>{item.meaning}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface EngagedListProps {
+  items: ConversationContact[];
+  onSelect: (conversation: ConversationContact) => void;
+  loadingId: number | null;
+  emptyLabel: string;
+}
+
+function EngagedList({ items, onSelect, loadingId, emptyLabel }: EngagedListProps) {
+  if (items.length === 0) {
+    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="grid gap-2.5">
+      <StatusLegend />
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onSelect(item)}
+          disabled={loadingId !== null}
+          className="w-full rounded-[16px] border border-[rgba(55,42,24,0.12)] bg-[#fff9f0] p-4 text-left transition hover:border-[#2d8666] disabled:opacity-60"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <strong className="block truncate text-[#20170d]">{item.patient}</strong>
+              <span className="text-[0.86rem] text-[#6f604d]">
+                {item.channel} • {item.topic}
+              </span>
+            </div>
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[0.74rem] font-bold ${getStatusClass(item.status)}`}
+            >
+              {item.status}
+            </span>
+          </div>
+          <p className="mt-2 line-clamp-2 text-[0.9rem] leading-5 text-[#20170d] opacity-85">
+            {item.lastMessage}
+          </p>
+          <div className="mt-2 flex items-center justify-between text-[0.76rem] text-[#6f604d]">
+            <span>{item.interacoes} interaç{item.interacoes === 1 ? "ão" : "ões"}</span>
+            <span>{item.time}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface ThreadViewProps {
+  thread: ConversationThread | null;
+  loading: boolean;
+  error: string | null;
+}
+
+function ThreadView({ thread, loading, error }: ThreadViewProps) {
+  if (loading) {
+    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">Carregando conversa…</p>;
+  }
+  if (error) {
+    return <p className="py-6 text-center text-[0.92rem] text-[#b5482b]">{error}</p>;
+  }
+  if (!thread || thread.messages.length === 0) {
+    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">Sem mensagens nesta conversa.</p>;
+  }
+
+  return (
+    <div className="grid gap-2.5">
+      {thread.messages.map((message: ThreadMessage) => {
+        const meta = getThreadAuthorMeta(message.author);
+        return (
+          <div key={message.id} className={`flex ${meta.row}`}>
+            <div className={`max-w-[85%] rounded-[16px] px-3.5 py-2.5 ${meta.bubble}`}>
+              <span className="block text-[0.66rem] font-semibold uppercase tracking-[0.08em] opacity-70">
+                {meta.label}
+              </span>
+              <p className="mt-1 whitespace-pre-wrap text-[0.92rem] leading-5">{message.content}</p>
+              <span className="mt-1 block text-right text-[0.66rem] opacity-70">{message.time}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface EngagedDrilldownProps {
+  eyebrow: string;
+  noun: string;
+  items: ConversationContact[];
+  thread: ConversationThread | null;
+  loadingId: number | null;
+  error: string | null;
+  onSelect: (conversation: ConversationContact) => void;
+  onBack: () => void;
+  onClose: () => void;
+}
+
+function EngagedDrilldown({
+  eyebrow,
+  noun,
+  items,
+  thread,
+  loadingId,
+  error,
+  onSelect,
+  onBack,
+  onClose,
+}: EngagedDrilldownProps) {
+  const showThread = loadingId !== null || thread !== null || error !== null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(20,15,8,0.45)] backdrop-blur-sm sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[24px] border border-[rgba(55,42,24,0.12)] bg-[#fffdf8] shadow-[0_20px_60px_rgba(46,30,9,0.25)] sm:rounded-[24px]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[rgba(55,42,24,0.1)] px-5 py-4">
+          <div className="flex min-w-0 items-center gap-2">
+            {showThread ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Voltar"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(55,42,24,0.14)] text-[#20170d] transition hover:bg-[rgba(32,23,13,0.05)]"
+              >
+                ←
+              </button>
+            ) : null}
+            <div className="min-w-0">
+              <span className="block text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[#dc6a4d]">
+                {eyebrow}
+              </span>
+              <strong className="block truncate text-[#20170d]">
+                {showThread
+                  ? thread?.patient || "Conversa"
+                  : `${items.length} ${noun}`}
+              </strong>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(55,42,24,0.14)] text-[#20170d] transition hover:bg-[rgba(32,23,13,0.05)]"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-4">
+          {showThread ? (
+            <ThreadView thread={thread} loading={loadingId !== null} error={error} />
+          ) : (
+            <EngagedList
+              items={items}
+              onSelect={onSelect}
+              loadingId={loadingId}
+              emptyLabel={`Nenhum registro de ${noun} no período selecionado.`}
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -209,7 +535,7 @@ interface ConversationFeedProps {
 
 function ConversationFeed({ items }: ConversationFeedProps) {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => (
         <article
           key={`${item.patient}-${item.time}`}
@@ -243,6 +569,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [days, setDays] = useState(1);
+
+  const [drilldownView, setDrilldownView] = useState<DrilldownView | null>(null);
+  const [activeThread, setActiveThread] = useState<ConversationThread | null>(null);
+  const [threadLoadingId, setThreadLoadingId] = useState<number | null>(null);
+  const [threadError, setThreadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -252,14 +584,13 @@ export default function App() {
       setError(null);
 
       try {
-        const response = await getDashboardData();
+        const response = await getDashboardData(days);
 
         if (active) {
           setDashboard(response);
         }
       } catch (loadError) {
         if (active) {
-          setDashboard(null);
           setError(
             loadError instanceof Error
               ? loadError.message
@@ -278,29 +609,76 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [retryCount]);
+  }, [retryCount, days]);
 
-  if (loading) {
+  const openDrilldown = useCallback((view: DrilldownView) => {
+    setActiveThread(null);
+    setThreadError(null);
+    setThreadLoadingId(null);
+    setDrilldownView(view);
+  }, []);
+
+  const closeDrilldown = useCallback(() => {
+    setDrilldownView(null);
+  }, []);
+
+  const backToList = useCallback(() => {
+    setActiveThread(null);
+    setThreadError(null);
+    setThreadLoadingId(null);
+  }, []);
+
+  const openThread = useCallback(async (conversation: ConversationContact) => {
+    setThreadLoadingId(conversation.id);
+    setThreadError(null);
+    setActiveThread(null);
+
+    try {
+      const thread = await getConversationThread(conversation.id);
+      setActiveThread(thread);
+    } catch (threadErr) {
+      setThreadError(
+        threadErr instanceof Error ? threadErr.message : "Falha ao carregar a conversa.",
+      );
+    } finally {
+      setThreadLoadingId(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!drilldownView) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDrilldownView(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drilldownView]);
+
+  if (loading && !dashboard) {
     return (
       <main className={`${shellClass} grid min-h-screen place-items-center`}>
         <div className={`${panelClass} w-full max-w-[540px]`}>
           <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            Botta Indicadores
+            ANALISE DR BEM ESTAR
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
-            Carregando dados da operacao...
+            Carregando dados da operação...
           </h1>
         </div>
       </main>
     );
   }
 
-  if (error) {
+  if (error && !dashboard) {
     return (
       <main className={`${shellClass} grid min-h-screen place-items-center`}>
         <div className={`${panelClass} w-full max-w-[540px]`}>
           <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            Botta Indicadores
+            ANALISE DR BEM ESTAR
           </span>
           <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
             Nao conseguimos carregar o dashboard
@@ -324,115 +702,131 @@ export default function App() {
 
   return (
     <main className={shellClass}>
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-6 flex flex-col gap-4 border-b border-[rgba(55,42,24,0.12)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="mb-2 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            Botta Indicadores
+          <span className="mb-1.5 inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
+            ANALISE DR BEM ESTAR
           </span>
-          <h1 className={`${sectionTitleClass} text-[clamp(2rem,3vw,3rem)]`}>
-            Dashboard de disparos, conversas e visão operacional
+          <h1 className={`${sectionTitleClass} text-[clamp(1.6rem,3vw,2.4rem)]`}>
+            Dashboard Executivo
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-2 text-[0.82rem] font-semibold text-[#20170d] shadow-[0_10px_28px_rgba(46,30,9,0.08)]">
-            Chatwoot ativo
-          </span>
+        <div className="flex flex-col items-start gap-3 sm:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <PeriodFilter value={days} busy={loading} onChange={setDays} />
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(45,134,102,0.12)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#1d6248]">
+                Atualizando…
+              </span>
+            ) : null}
+            {error && dashboard ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(181,72,43,0.12)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#b5482b]">
+                Falha ao atualizar
+              </span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-1.5 text-[0.78rem] font-semibold text-[#20170d]">
+              <span className="h-2 w-2 rounded-full bg-[#2d8666]" />
+              Chatwoot ativo
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-1.5 text-[0.78rem] text-[#6f604d]">
+              <span className="font-semibold text-[#20170d]">Atualizado</span>
+              <span className="hidden sm:inline">{formatDateTime(dashboard.updatedAt)}</span>
+              <span className="sm:hidden">{formatShortDateTime(dashboard.updatedAt)}</span>
+            </span>
+          </div>
         </div>
       </header>
 
-      <section className="mb-5 grid gap-5 lg:grid-cols-[1.5fr_minmax(280px,0.8fr)]">
-        <div className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(135deg,rgba(32,23,13,0.95),rgba(45,63,102,0.92)),linear-gradient(180deg,rgba(239,155,40,0.25),transparent)] p-9 text-[#fff9ef] shadow-[0_18px_50px_rgba(46,30,9,0.1)] sm:p-10">
-          <div className="absolute inset-auto -bottom-12 -right-8 h-[220px] w-[220px] rounded-full bg-[rgba(239,155,40,0.16)] blur-[6px]" />
-          <div className="relative z-10 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#fff9ef]">
-              Painel executivo
+      <section className="mb-5">
+        <div className="rounded-[24px] border border-[rgba(239,155,40,0.35)] bg-[linear-gradient(120deg,rgba(239,155,40,0.10),rgba(45,134,102,0.07))] p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#dc6a4d]">
+              Últimas 24 horas
             </span>
-            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#fff9ef]">
-              Dados reais
+            <span className="text-[0.74rem] text-[#6f604d]">
+              Por data de envio · janela fixa, independe do filtro
             </span>
           </div>
-          <h2 className="relative z-10 mt-5 max-w-[12ch] font-[family-name:var(--font-display)] text-[clamp(2.4rem,4vw,4.5rem)] leading-[1.02] tracking-tight">
-            Botta Indicadores
-          </h2>
-          <p className="relative z-10 mt-5 max-w-[54ch] leading-6 opacity-90">
-            Dashboard de disparos, conversas e visão operacional conectado ao
-            Chatwoot para leitura real da operação, com foco em tração,
-            engajamento e acompanhamento das últimas interações.
-          </p>
-        </div>
-
-        <div className="flex flex-col justify-end rounded-[28px] border border-[rgba(55,42,24,0.12)] bg-[linear-gradient(180deg,rgba(255,248,234,0.92),rgba(246,232,209,0.78)),rgba(255,251,244,0.76)] p-7 shadow-[0_18px_50px_rgba(46,30,9,0.1)] backdrop-blur-[16px]">
-          <span className="text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            Última atualização
-          </span>
-          <strong className="mt-3 font-[family-name:var(--font-display)] text-[1.65rem] leading-tight tracking-tight text-[#20170d]">
-            {formatDateTime(dashboard.updatedAt)}
-          </strong>
-          <p className="m-0 mt-2 leading-6 text-[#20170d] opacity-85">
-            Dados servidos pela API do backend com base real do Chatwoot.
-          </p>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-8">
+            <div>
+              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#20170d]">
+                {formatNumber((dashboard.ultimas24h ?? { chatsAbertos: 0 }).chatsAbertos)}
+              </strong>
+              <span className="mt-2 block text-[0.88rem] text-[#6f604d]">Disparos enviados nas últimas 24h</span>
+            </div>
+            <div>
+              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#1d6248]">
+                {formatNumber((dashboard.ultimas24h ?? { comInteracao: 0 }).comInteracao)}
+              </strong>
+              <span className="mt-2 block text-[0.88rem] text-[#6f604d]">
+                Tiveram interação · {formatDecimal((dashboard.ultimas24h ?? { taxaInteracao: 0 }).taxaInteracao)}%
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="mb-5 grid gap-5 lg:grid-cols-2">
-        <div className={panelClass}>
-          <SectionHeading
-            eyebrow="Botta Indicadores"
-            title="Saúde da operação de disparos"
-            description="Os indicadores principais já estão separados para o time bater o olho e entender tração e qualidade do contato."
-          />
+      <section className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <KpiCard
+          label="Disparos realizados"
+          value={formatNumber(dashboard.summary.disparosNoPeriodo)}
+          helper="Disparos enviados no período selecionado"
+          accent="sun"
+          onClick={() => openDrilldown("disparos")}
+          actionLabel="ver contatos"
+        />
+        <KpiCard
+          label="Interações no período"
+          value={formatNumber(dashboard.summary.interacoesNoPeriodo)}
+          helper="Contatos que interagiram dentro do filtro — mais recentes primeiro"
+          accent="coral"
+          onClick={() => openDrilldown("interacoes")}
+          actionLabel="ver últimas"
+        />
+        <KpiCard
+          label="Taxa de engajamento"
+          value={`${formatDecimal(dashboard.summary.taxaEngajamento)}%`}
+          helper={`${formatNumber(dashboard.summary.contatosInteragiram)} contatos interagiram`}
+          accent="mint"
+          onClick={() => openDrilldown("engajados")}
+          actionLabel="ver conversas"
+        />
+        <KpiCard
+          label="Interações por contato"
+          value={formatDecimal(dashboard.summary.mediaInteracoesPorContato)}
+          helper="Média de respostas do contato após o disparo (quanto maior, mais profunda a conversa)"
+          accent="ink"
+        />
+        <KpiCard
+          label="Oportunidades"
+          value={formatNumber(dashboard.overview.oportunidades)}
+          helper="Leads aquecidos ou retomadas"
+          accent="sun"
+          onClick={() => openDrilldown("oportunidades")}
+          actionLabel="ver detalhes"
+        />
+      </section>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <MetricCard
-              label="Quantidade de disparos realizados"
-              value={formatNumber(dashboard.summary.disparosRealizados)}
-              helper="Volume total enviado no período"
-              accent="sun"
-            />
-            <MetricCard
-              label="Quantidade de contatos que interagiram"
-              value={formatNumber(dashboard.summary.contatosInteragiram)}
-              helper={`${formatDecimal(dashboard.summary.taxaEngajamento)}% de engajamento`}
-              accent="mint"
-            />
-            <MetricCard
-              label="Média de interações por contato"
-              value={formatDecimal(dashboard.summary.mediaInteracoesPorContato)}
-              helper="Indica profundidade das conversas"
-              accent="coral"
-            />
-          </div>
-        </div>
-
+      <section className="mb-5 grid gap-4 lg:grid-cols-[1.4fr_1fr] lg:gap-5">
         <div className={panelClass}>
           <SectionHeading
             eyebrow="Chatwoot"
-            title="Evolucao das novas conversas"
-            description="Leitura acumulada para identificar picos, sazonalidade e o ritmo de crescimento do volume ao longo da janela analisada."
+            title="Evolução das novas conversas"
+            description="Leitura acumulada para identificar picos, sazonalidade e o ritmo de crescimento do volume."
           />
           <BarChart items={dashboard.acumuladoDiario} />
-        </div>
-      </section>
-
-      <section className="mb-5 grid gap-5 lg:grid-cols-2">
-        <div className={panelClass}>
-          <SectionHeading
-            eyebrow="Tópicos tratados"
-            title="Resumo temático das conversas"
-            description="Uma leitura rápida dos principais assuntos ajuda a orientar campanhas, atendimento humano e próximos testes."
-          />
-          <TopicList topics={dashboard.topicos} />
         </div>
 
         <div className={panelClass}>
           <SectionHeading
             eyebrow="Panorama"
-            title="Panorama operacional"
-            description="Números de acompanhamento para saber o que foi respondido, o que precisa de apoio humano e onde estão as oportunidades."
+            title="Status da operação"
+            description="O que foi respondido, o que precisa de apoio humano e onde estão as oportunidades."
           />
-
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <MetricCard
               label="Total de conversas"
               value={formatNumber(dashboard.overview.totalConversas)}
@@ -442,44 +836,69 @@ export default function App() {
             <MetricCard
               label="Respondidas"
               value={formatNumber(dashboard.overview.respondidas)}
-              helper="Fluxos concluídos ou bem encaminhados"
+              helper="Fluxos bem encaminhados"
               accent="mint"
             />
             <MetricCard
               label="Aguardando humano"
               value={formatNumber(dashboard.overview.aguardandoHumano)}
-              helper="Casos para atendimento do time"
+              helper="Casos para o time"
               accent="coral"
             />
             <MetricCard
               label="Oportunidades"
               value={formatNumber(dashboard.overview.oportunidades)}
-              helper="Leads aquecidos ou retomadas"
+              helper="Leads aquecidos"
               accent="ink"
             />
           </div>
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-2">
+      <section className="mb-5 grid gap-4 lg:grid-cols-2 lg:gap-5">
         <div className={panelClass}>
           <SectionHeading
-            eyebrow="Funil"
-            title="Da entrega ao encaminhamento"
-            description="Uma leitura simples do funil ajuda a alinhar marketing, automação e operação comercial."
+            eyebrow="Tópicos tratados"
+            title="Resumo temático das conversas"
+            description="Uma leitura rápida dos principais assuntos para orientar campanhas e atendimento."
           />
-          <Funnel stages={dashboard.funil} />
+          <TopicList topics={dashboard.topicos} />
         </div>
 
         <div className={panelClass}>
           <SectionHeading
+            eyebrow="Funil"
+            title="Da entrega ao encaminhamento"
+            description="Leitura simples do funil para alinhar marketing, automação e operação comercial."
+          />
+          <Funnel stages={dashboard.funil} />
+        </div>
+      </section>
+
+      <section>
+        <div className={panelClass}>
+          <SectionHeading
             eyebrow="Conversas recentes"
             title="Fila de acompanhamento"
-            description="Bloco visual para o time entender rapidamente contexto, urgência e assunto das últimas interações."
+            description="Contexto, urgência e assunto das últimas interações para o time agir rápido."
           />
           <ConversationFeed items={dashboard.conversasRecentes} />
         </div>
       </section>
+
+      {drilldownView ? (
+        <EngagedDrilldown
+          eyebrow={DRILLDOWN_META[drilldownView].eyebrow}
+          noun={DRILLDOWN_META[drilldownView].noun}
+          items={filterContacts(drilldownView, dashboard.contatos ?? [])}
+          thread={activeThread}
+          loadingId={threadLoadingId}
+          error={threadError}
+          onSelect={openThread}
+          onBack={backToList}
+          onClose={closeDrilldown}
+        />
+      ) : null}
     </main>
   );
 }

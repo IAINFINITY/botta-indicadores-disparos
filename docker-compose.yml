@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3333:3333"
+      - "8002:3333"
     restart: unless-stopped
 
   frontend:
@@ -18,7 +18,7 @@ services:
     environment:
       BACKEND_URL: http://backend:3333
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - backend
     restart: unless-stopped

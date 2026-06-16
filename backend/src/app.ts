@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { dashboardHandler } from "./routes/dashboard.js";
+import { conversationThreadHandler, dashboardHandler } from "./routes/dashboard.js";
 import { healthHandler } from "./routes/health.js";
 
 export function createApp() {
@@ -20,6 +20,7 @@ export function createApp() {
 
   app.get("/health", healthHandler);
   app.get("/api/dashboard", dashboardHandler);
+  app.get("/api/conversations/:id/messages", conversationThreadHandler);
 
   app.use((_req, res) => {
     res.status(404).json({

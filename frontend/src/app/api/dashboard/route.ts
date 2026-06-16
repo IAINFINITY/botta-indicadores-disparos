@@ -7,18 +7,27 @@ const backendBaseUrl = getServerEnv("BACKEND_URL", "http://127.0.0.1:3333");
 function toPublicDashboardData(payload: Record<string, unknown>): DashboardData {
   return {
     updatedAt: String(payload.updatedAt || ""),
+    periodoDias: Number(payload.periodoDias) || 0,
     summary: payload.summary as DashboardData["summary"],
+    ultimas24h: payload.ultimas24h as DashboardData["ultimas24h"],
     acumuladoDiario: payload.acumuladoDiario as DashboardData["acumuladoDiario"],
     topicos: payload.topicos as DashboardData["topicos"],
     overview: payload.overview as DashboardData["overview"],
     funil: payload.funil as DashboardData["funil"],
     conversasRecentes: payload.conversasRecentes as DashboardData["conversasRecentes"],
+    contatos: (payload.contatos as DashboardData["contatos"]) ?? [],
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const response = await fetch(`${backendBaseUrl}/api/dashboard`, {
+    const days = new URL(request.url).searchParams.get("days");
+    const backendUrl = new URL(`${backendBaseUrl}/api/dashboard`);
+    if (days) {
+      backendUrl.searchParams.set("days", days);
+    }
+
+    const response = await fetch(backendUrl, {
       cache: "no-store",
     });
 
