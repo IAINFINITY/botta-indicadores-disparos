@@ -54,11 +54,11 @@ const STATUS_LEGEND: { status: string; meaning: string }[] = [
 const shellClass =
   "mx-auto w-full max-w-[1240px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8";
 const panelClass =
-  "rounded-[24px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,251,244,0.78)] p-5 shadow-[0_14px_40px_rgba(46,30,9,0.08)] backdrop-blur-[12px] sm:p-6";
+  "rounded-[24px] border border-[rgba(82,117,191,0.16)] bg-[rgba(255,255,255,0.85)] p-5 shadow-[0_14px_40px_rgba(46,51,64,0.10)] backdrop-blur-[12px] sm:p-6";
 const softCardClass =
-  "rounded-[18px] border border-[rgba(32,23,13,0.08)] bg-[#fff9f0] p-4 sm:p-5";
+  "rounded-[18px] border border-[rgba(46,51,64,0.08)] bg-[#f5f8fc] p-4 sm:p-5";
 const sectionTitleClass =
-  "font-[family-name:var(--font-display)] text-[clamp(1.35rem,2.2vw,1.9rem)] leading-[1.1] tracking-tight text-[#20170d]";
+  "font-[family-name:var(--font-display)] text-[clamp(1.35rem,2.2vw,1.9rem)] leading-[1.1] tracking-tight text-[#2e3340]";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
@@ -98,14 +98,14 @@ function getStatusClassName(value: string): string {
 function getAccentBarClass(accent: "sun" | "mint" | "coral" | "ink"): string {
   switch (accent) {
     case "mint":
-      return "bg-[#2d8666]";
+      return "bg-[#2e9e8f]";
     case "coral":
-      return "bg-[#dc6a4d]";
+      return "bg-[#78c8f0]";
     case "ink":
-      return "bg-[#2d3f66]";
+      return "bg-[#2e3340]";
     case "sun":
     default:
-      return "bg-[#ef9b28]";
+      return "bg-[#5275bf]";
   }
 }
 
@@ -113,13 +113,13 @@ function getStatusClass(status: string): string {
   const normalized = getStatusClassName(status);
   switch (normalized) {
     case "quente":
-      return "bg-[rgba(239,155,40,0.14)] text-[#9a5b00]";
+      return "bg-[rgba(120,200,240,0.18)] text-[#1e6fa8]";
     case "em-analise":
-      return "bg-[rgba(45,63,102,0.12)] text-[#2d3f66]";
+      return "bg-[rgba(82,117,191,0.14)] text-[#3a57a0]";
     case "resolvido":
-      return "bg-[rgba(45,134,102,0.14)] text-[#1d6248]";
+      return "bg-[rgba(46,158,143,0.16)] text-[#1c7a6e]";
     default:
-      return "bg-[rgba(32,23,13,0.12)] text-[#20170d]";
+      return "bg-[rgba(46,51,64,0.12)] text-[#2e3340]";
   }
 }
 
@@ -134,11 +134,11 @@ function MetricCard({ label, value, helper, accent }: MetricCardProps) {
   return (
     <article className={softCardClass}>
       <div className={`mb-3 h-1.5 w-10 rounded-full ${getAccentBarClass(accent)}`} />
-      <span className="block text-[0.82rem] leading-5 text-[#6f604d]">{label}</span>
-      <strong className="my-2 block font-[family-name:var(--font-display)] text-[clamp(1.6rem,4vw,2.1rem)] leading-none tracking-tight text-[#20170d]">
+      <span className="block text-[0.82rem] leading-5 text-[#697586]">{label}</span>
+      <strong className="my-2 block font-[family-name:var(--font-display)] text-[clamp(1.6rem,4vw,2.1rem)] leading-none tracking-tight text-[#2e3340]">
         {value}
       </strong>
-      <span className="block text-[0.8rem] leading-5 text-[#6f604d]">{helper}</span>
+      <span className="block text-[0.8rem] leading-5 text-[#697586]">{helper}</span>
     </article>
   );
 }
@@ -157,16 +157,16 @@ function KpiCard({ label, value, helper, accent, onClick, actionLabel }: KpiCard
     <>
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${getAccentBarClass(accent)}`} />
-        <span className="text-[0.72rem] font-semibold uppercase leading-tight tracking-[0.08em] text-[#6f604d]">
+        <span className="text-[0.72rem] font-semibold uppercase leading-tight tracking-[0.08em] text-[#697586]">
           {label}
         </span>
       </div>
-      <strong className="mt-3 block font-[family-name:var(--font-display)] text-[clamp(1.7rem,5vw,2.3rem)] leading-none tracking-tight text-[#20170d]">
+      <strong className="mt-3 block font-[family-name:var(--font-display)] text-[clamp(1.7rem,5vw,2.3rem)] leading-none tracking-tight text-[#2e3340]">
         {value}
       </strong>
-      <span className="mt-2 block text-[0.82rem] leading-5 text-[#6f604d]">{helper}</span>
+      <span className="mt-2 block text-[0.82rem] leading-5 text-[#697586]">{helper}</span>
       {actionLabel ? (
-        <span className="mt-2 inline-flex items-center gap-1 text-[0.78rem] font-semibold text-[#2d8666]">
+        <span className="mt-2 inline-flex items-center gap-1 text-[0.78rem] font-semibold text-[#2e9e8f]">
           {actionLabel} <span aria-hidden>→</span>
         </span>
       ) : null}
@@ -178,7 +178,7 @@ function KpiCard({ label, value, helper, accent, onClick, actionLabel }: KpiCard
       <button
         type="button"
         onClick={onClick}
-        className={`${softCardClass} w-full cursor-pointer text-left transition hover:border-[#2d8666] hover:shadow-[0_12px_30px_rgba(45,134,102,0.18)]`}
+        className={`${softCardClass} w-full cursor-pointer text-left transition hover:border-[#5275bf] hover:shadow-[0_12px_30px_rgba(82,117,191,0.18)]`}
       >
         {inner}
       </button>
@@ -196,7 +196,7 @@ interface PeriodFilterProps {
 
 function PeriodFilter({ value, busy, onChange }: PeriodFilterProps) {
   return (
-    <div className="inline-flex items-center rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] p-1">
+    <div className="inline-flex items-center rounded-full border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-1">
       {PERIOD_OPTIONS.map((option) => {
         const active = option.days === value;
         return (
@@ -207,7 +207,7 @@ function PeriodFilter({ value, busy, onChange }: PeriodFilterProps) {
             disabled={busy}
             aria-pressed={active}
             className={`rounded-full px-3 py-1.5 text-[0.78rem] font-semibold transition disabled:opacity-60 ${
-              active ? "bg-[#20170d] text-[#fff9ef]" : "text-[#6f604d] hover:text-[#20170d]"
+              active ? "bg-[#5275bf] text-[#ffffff]" : "text-[#697586] hover:text-[#2e3340]"
             }`}
           >
             {option.label}
@@ -221,22 +221,22 @@ function PeriodFilter({ value, busy, onChange }: PeriodFilterProps) {
 function getThreadAuthorMeta(author: ThreadAuthor): { label: string; bubble: string; row: string } {
   switch (author) {
     case "infinity":
-      return { label: "Dr. Bem Estar (IA)", bubble: "bg-[#2d8666] text-[#fff9ef]", row: "justify-end" };
+      return { label: "Dr. Bem Estar (IA)", bubble: "bg-[#5275bf] text-[#ffffff]", row: "justify-end" };
     case "equipe":
-      return { label: "Equipe", bubble: "bg-[#2d3f66] text-[#fff9ef]", row: "justify-end" };
+      return { label: "Equipe", bubble: "bg-[#2e3340] text-[#ffffff]", row: "justify-end" };
     case "sistema":
-      return { label: "Sistema", bubble: "bg-[rgba(32,23,13,0.06)] text-[#6f604d]", row: "justify-center" };
+      return { label: "Sistema", bubble: "bg-[rgba(46,51,64,0.06)] text-[#697586]", row: "justify-center" };
     case "contato":
     default:
-      return { label: "Cliente", bubble: "bg-[#fff3df] text-[#20170d]", row: "justify-start" };
+      return { label: "Cliente", bubble: "bg-[#e6f4fc] text-[#2e3340]", row: "justify-start" };
   }
 }
 
 function StatusLegend() {
   return (
-    <div className="mb-3 grid gap-1.5 rounded-[14px] border border-[rgba(55,42,24,0.1)] bg-[#fffaf1] p-3">
+    <div className="mb-3 grid gap-1.5 rounded-[14px] border border-[rgba(46,51,64,0.10)] bg-[#f5f8fc] p-3">
       {STATUS_LEGEND.map((item) => (
-        <div key={item.status} className="flex items-center gap-2 text-[0.78rem] text-[#6f604d]">
+        <div key={item.status} className="flex items-center gap-2 text-[0.78rem] text-[#697586]">
           <span
             className={`shrink-0 rounded-full px-2 py-0.5 text-[0.7rem] font-bold ${getStatusClass(item.status)}`}
           >
@@ -258,7 +258,7 @@ interface EngagedListProps {
 
 function EngagedList({ items, onSelect, loadingId, emptyLabel }: EngagedListProps) {
   if (items.length === 0) {
-    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">{emptyLabel}</p>;
+    return <p className="py-6 text-center text-[0.92rem] text-[#697586]">{emptyLabel}</p>;
   }
 
   return (
@@ -270,12 +270,12 @@ function EngagedList({ items, onSelect, loadingId, emptyLabel }: EngagedListProp
           type="button"
           onClick={() => onSelect(item)}
           disabled={loadingId !== null}
-          className="w-full rounded-[16px] border border-[rgba(55,42,24,0.12)] bg-[#fff9f0] p-4 text-left transition hover:border-[#2d8666] disabled:opacity-60"
+          className="w-full rounded-[16px] border border-[rgba(46,51,64,0.12)] bg-[#f5f8fc] p-4 text-left transition hover:border-[#2e9e8f] disabled:opacity-60"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <strong className="block truncate text-[#20170d]">{item.patient}</strong>
-              <span className="text-[0.86rem] text-[#6f604d]">
+              <strong className="block truncate text-[#2e3340]">{item.patient}</strong>
+              <span className="text-[0.86rem] text-[#697586]">
                 {item.channel} • {item.topic}
               </span>
             </div>
@@ -285,10 +285,10 @@ function EngagedList({ items, onSelect, loadingId, emptyLabel }: EngagedListProp
               {item.status}
             </span>
           </div>
-          <p className="mt-2 line-clamp-2 text-[0.9rem] leading-5 text-[#20170d] opacity-85">
+          <p className="mt-2 line-clamp-2 text-[0.9rem] leading-5 text-[#2e3340] opacity-85">
             {item.lastMessage}
           </p>
-          <div className="mt-2 flex items-center justify-between text-[0.76rem] text-[#6f604d]">
+          <div className="mt-2 flex items-center justify-between text-[0.76rem] text-[#697586]">
             <span>{item.interacoes} interaç{item.interacoes === 1 ? "ão" : "ões"}</span>
             <span>{item.time}</span>
           </div>
@@ -306,13 +306,13 @@ interface ThreadViewProps {
 
 function ThreadView({ thread, loading, error }: ThreadViewProps) {
   if (loading) {
-    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">Carregando conversa…</p>;
+    return <p className="py-6 text-center text-[0.92rem] text-[#697586]">Carregando conversa…</p>;
   }
   if (error) {
-    return <p className="py-6 text-center text-[0.92rem] text-[#b5482b]">{error}</p>;
+    return <p className="py-6 text-center text-[0.92rem] text-[#ca1a20]">{error}</p>;
   }
   if (!thread || thread.messages.length === 0) {
-    return <p className="py-6 text-center text-[0.92rem] text-[#6f604d]">Sem mensagens nesta conversa.</p>;
+    return <p className="py-6 text-center text-[0.92rem] text-[#697586]">Sem mensagens nesta conversa.</p>;
   }
 
   return (
@@ -362,32 +362,32 @@ function EngagedDrilldown({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(20,15,8,0.45)] backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(20,28,40,0.45)] backdrop-blur-sm sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[24px] border border-[rgba(55,42,24,0.12)] bg-[#fffdf8] shadow-[0_20px_60px_rgba(46,30,9,0.25)] sm:rounded-[24px]"
+        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[24px] border border-[rgba(82,117,191,0.16)] bg-[#ffffff] shadow-[0_20px_60px_rgba(20,28,40,0.22)] sm:rounded-[24px]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-[rgba(55,42,24,0.1)] px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-[rgba(46,51,64,0.10)] px-5 py-4">
           <div className="flex min-w-0 items-center gap-2">
             {showThread ? (
               <button
                 type="button"
                 onClick={onBack}
                 aria-label="Voltar"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(55,42,24,0.14)] text-[#20170d] transition hover:bg-[rgba(32,23,13,0.05)]"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(46,51,64,0.14)] text-[#2e3340] transition hover:bg-[rgba(46,51,64,0.05)]"
               >
                 ←
               </button>
             ) : null}
             <div className="min-w-0">
-              <span className="block text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[#dc6a4d]">
+              <span className="block text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[#5275bf]">
                 {eyebrow}
               </span>
-              <strong className="block truncate text-[#20170d]">
+              <strong className="block truncate text-[#2e3340]">
                 {showThread
                   ? thread?.patient || "Conversa"
                   : `${items.length} ${noun}`}
@@ -398,7 +398,7 @@ function EngagedDrilldown({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(55,42,24,0.14)] text-[#20170d] transition hover:bg-[rgba(32,23,13,0.05)]"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(46,51,64,0.14)] text-[#2e3340] transition hover:bg-[rgba(46,51,64,0.05)]"
           >
             ✕
           </button>
@@ -430,11 +430,11 @@ interface SectionHeadingProps {
 function SectionHeading({ eyebrow, title, description }: SectionHeadingProps) {
   return (
     <div className="mb-5">
-      <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
+      <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#5275bf]">
         {eyebrow}
       </span>
       <h2 className={`${sectionTitleClass} mb-2`}>{title}</h2>
-      <p className="m-0 leading-6 text-[#6f604d]">{description}</p>
+      <p className="m-0 leading-6 text-[#697586]">{description}</p>
     </div>
   );
 }
@@ -447,18 +447,18 @@ function BarChart({ items }: BarChartProps) {
   const maxValue = Math.max(1, ...items.map((item) => item.acumulado));
 
   return (
-    <div className="rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(250,239,220,0.74))] p-3 pb-1">
+    <div className="rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(237,243,250,0.85))] p-3 pb-1">
       <div className="grid min-h-[220px] grid-cols-7 items-end gap-2 sm:min-h-[300px] sm:gap-3">
         {items.map((item) => (
           <div key={item.day} className="grid justify-items-center gap-2">
             <div
-              className="flex min-h-12 w-full items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#2d8666,#8cc4a9)] pt-3 font-bold text-[#fff9ef] shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)]"
+              className="flex min-h-12 w-full items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#5275bf,#78c8f0)] pt-3 font-bold text-[#ffffff] shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)]"
               style={{ height: `${(item.acumulado / maxValue) * 100}%` }}
             >
               <span className="text-[0.85rem] sm:text-[1rem]">{formatNumber(item.acumulado)}</span>
             </div>
-            <small className="text-[#6f604d]">{item.day}</small>
-            <strong className="text-[#6f604d]">+{item.novasConversas}</strong>
+            <small className="text-[#697586]">{item.day}</small>
+            <strong className="text-[#697586]">+{item.novasConversas}</strong>
           </div>
         ))}
       </div>
@@ -476,21 +476,21 @@ function TopicList({ topics }: TopicListProps) {
       {topics.map((topic) => (
         <article
           key={topic.name}
-          className="rounded-[22px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] p-4 sm:p-[18px]"
+          className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
         >
           <div className="flex items-start justify-between gap-4">
-            <strong className="mb-1 block text-[#20170d]">{topic.name}</strong>
-            <span className="font-[family-name:var(--font-display)] text-[1.1rem] text-[#20170d]">
+            <strong className="mb-1 block text-[#2e3340]">{topic.name}</strong>
+            <span className="font-[family-name:var(--font-display)] text-[1.1rem] text-[#2e3340]">
               {topic.share}%
             </span>
           </div>
-          <div className="my-3 h-2 overflow-hidden rounded-full bg-[rgba(32,23,13,0.08)]">
+          <div className="my-3 h-2 overflow-hidden rounded-full bg-[rgba(46,51,64,0.08)]">
             <span
-              className="block h-full rounded-full bg-[linear-gradient(90deg,#ef9b28,#dc6a4d)]"
+              className="block h-full rounded-full bg-[linear-gradient(90deg,#5275bf,#78c8f0)]"
               style={{ width: `${topic.share}%` }}
             />
           </div>
-          <p className="m-0 leading-6 text-[#20170d] opacity-85">{topic.resume}</p>
+          <p className="m-0 leading-6 text-[#2e3340] opacity-85">{topic.resume}</p>
         </article>
       ))}
     </div>
@@ -509,17 +509,17 @@ function Funnel({ stages }: FunnelProps) {
       {stages.map((stage) => (
         <div
           key={stage.label}
-          className="rounded-[20px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] p-4"
+          className="rounded-[20px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4"
         >
           <div className="flex items-start justify-between gap-4">
-            <span className="text-[#20170d]">{stage.label}</span>
-            <strong className="font-[family-name:var(--font-display)] text-[#20170d]">
+            <span className="text-[#2e3340]">{stage.label}</span>
+            <strong className="font-[family-name:var(--font-display)] text-[#2e3340]">
               {formatNumber(stage.value)}
             </strong>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(32,23,13,0.08)]">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(46,51,64,0.08)]">
             <span
-              className="block h-full rounded-full bg-[linear-gradient(90deg,#ef9b28,#dc6a4d)]"
+              className="block h-full rounded-full bg-[linear-gradient(90deg,#5275bf,#78c8f0)]"
               style={{ width: `${(stage.value / maxValue) * 100}%` }}
             />
           </div>
@@ -539,12 +539,12 @@ function ConversationFeed({ items }: ConversationFeedProps) {
       {items.map((item) => (
         <article
           key={`${item.patient}-${item.time}`}
-          className="rounded-[22px] border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] p-4 sm:p-[18px]"
+          className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <strong className="mb-1 block text-[#20170d]">{item.patient}</strong>
-              <span className="text-[0.92rem] text-[#6f604d]">
+              <strong className="mb-1 block text-[#2e3340]">{item.patient}</strong>
+              <span className="text-[0.92rem] text-[#697586]">
                 {item.channel} • {item.topic}
               </span>
             </div>
@@ -556,8 +556,8 @@ function ConversationFeed({ items }: ConversationFeedProps) {
               {item.status}
             </span>
           </div>
-          <p className="mb-2 mt-4 leading-6 text-[#20170d]">{item.lastMessage}</p>
-          <small className="text-[#6f604d]">{item.time}</small>
+          <p className="mb-2 mt-4 leading-6 text-[#2e3340]">{item.lastMessage}</p>
+          <small className="text-[#697586]">{item.time}</small>
         </article>
       ))}
     </div>
@@ -662,10 +662,13 @@ export default function App() {
     return (
       <main className={`${shellClass} grid min-h-screen place-items-center`}>
         <div className={`${panelClass} w-full max-w-[540px]`}>
-          <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            ANALISE DR BEM ESTAR
+          <span className="mb-4 inline-flex items-center rounded-[14px] bg-[#2e3340] px-4 py-2.5 shadow-[0_8px_24px_rgba(46,51,64,0.18)]">
+            <img src="/logo-drbemestar.png" alt="Dr. Bem-estar" className="h-8 w-auto" />
           </span>
-          <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
+          <span className="mb-3 block text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#5275bf]">
+            ANÁLISE DR BEM ESTAR
+          </span>
+          <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#2e3340]">
             Carregando dados da operação...
           </h1>
         </div>
@@ -677,17 +680,20 @@ export default function App() {
     return (
       <main className={`${shellClass} grid min-h-screen place-items-center`}>
         <div className={`${panelClass} w-full max-w-[540px]`}>
-          <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            ANALISE DR BEM ESTAR
+          <span className="mb-4 inline-flex items-center rounded-[14px] bg-[#2e3340] px-4 py-2.5 shadow-[0_8px_24px_rgba(46,51,64,0.18)]">
+            <img src="/logo-drbemestar.png" alt="Dr. Bem-estar" className="h-8 w-auto" />
           </span>
-          <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#20170d]">
+          <span className="mb-3 block text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#5275bf]">
+            ANÁLISE DR BEM ESTAR
+          </span>
+          <h1 className="m-0 font-[family-name:var(--font-display)] text-[clamp(2rem,4vw,3rem)] leading-tight tracking-tight text-[#2e3340]">
             Nao conseguimos carregar o dashboard
           </h1>
-          <p className="mt-4 leading-6 text-[#6f604d]">{error}</p>
+          <p className="mt-4 leading-6 text-[#697586]">{error}</p>
           <button
             type="button"
             onClick={() => setRetryCount((current) => current + 1)}
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-[#20170d] px-5 py-3 text-sm font-semibold text-[#fff9ef] transition hover:bg-[#2d3f66]"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-[#5275bf] px-5 py-3 text-sm font-semibold text-[#ffffff] transition hover:bg-[#3a57a0]"
           >
             Tentar novamente
           </button>
@@ -702,10 +708,17 @@ export default function App() {
 
   return (
     <main className={shellClass}>
-      <header className="mb-6 flex flex-col gap-4 border-b border-[rgba(55,42,24,0.12)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-6 flex flex-col gap-4 border-b border-[rgba(46,51,64,0.12)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="mb-1.5 inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#dc6a4d]">
-            ANALISE DR BEM ESTAR
+          <span className="mb-3 inline-flex items-center rounded-[14px] bg-[#2e3340] px-3.5 py-2 shadow-[0_8px_24px_rgba(46,51,64,0.18)]">
+            <img
+              src="/logo-drbemestar.png"
+              alt="Dr. Bem-estar"
+              className="h-7 w-auto sm:h-8"
+            />
+          </span>
+          <span className="mb-1.5 block text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#5275bf]">
+            ANÁLISE DR BEM ESTAR
           </span>
           <h1 className={`${sectionTitleClass} text-[clamp(1.6rem,3vw,2.4rem)]`}>
             Dashboard Executivo
@@ -716,23 +729,23 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2">
             <PeriodFilter value={days} busy={loading} onChange={setDays} />
             {loading ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(45,134,102,0.12)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#1d6248]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(46,158,143,0.12)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#1c7a6e]">
                 Atualizando…
               </span>
             ) : null}
             {error && dashboard ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(181,72,43,0.12)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#b5482b]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(202,26,32,0.10)] px-3 py-1.5 text-[0.76rem] font-semibold text-[#ca1a20]">
                 Falha ao atualizar
               </span>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-1.5 text-[0.78rem] font-semibold text-[#20170d]">
-              <span className="h-2 w-2 rounded-full bg-[#2d8666]" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] px-3 py-1.5 text-[0.78rem] font-semibold text-[#2e3340]">
+              <span className="h-2 w-2 rounded-full bg-[#2e9e8f]" />
               Chatwoot ativo
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(55,42,24,0.12)] bg-[rgba(255,250,241,0.82)] px-3 py-1.5 text-[0.78rem] text-[#6f604d]">
-              <span className="font-semibold text-[#20170d]">Atualizado</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] px-3 py-1.5 text-[0.78rem] text-[#697586]">
+              <span className="font-semibold text-[#2e3340]">Atualizado</span>
               <span className="hidden sm:inline">{formatDateTime(dashboard.updatedAt)}</span>
               <span className="sm:hidden">{formatShortDateTime(dashboard.updatedAt)}</span>
             </span>
@@ -741,27 +754,27 @@ export default function App() {
       </header>
 
       <section className="mb-5">
-        <div className="rounded-[24px] border border-[rgba(239,155,40,0.35)] bg-[linear-gradient(120deg,rgba(239,155,40,0.10),rgba(45,134,102,0.07))] p-5 sm:p-6">
+        <div className="rounded-[24px] border border-[rgba(82,117,191,0.30)] bg-[linear-gradient(120deg,rgba(82,117,191,0.10),rgba(120,200,240,0.12))] p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#dc6a4d]">
+            <span className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#5275bf]">
               Últimas 24 horas
             </span>
-            <span className="text-[0.74rem] text-[#6f604d]">
+            <span className="text-[0.74rem] text-[#697586]">
               Por data de envio · janela fixa, independe do filtro
             </span>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-8">
             <div>
-              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#20170d]">
+              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#2e3340]">
                 {formatNumber((dashboard.ultimas24h ?? { chatsAbertos: 0 }).chatsAbertos)}
               </strong>
-              <span className="mt-2 block text-[0.88rem] text-[#6f604d]">Disparos enviados nas últimas 24h</span>
+              <span className="mt-2 block text-[0.88rem] text-[#697586]">Disparos enviados nas últimas 24h</span>
             </div>
             <div>
-              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#1d6248]">
+              <strong className="block font-[family-name:var(--font-display)] text-[clamp(2rem,7vw,3rem)] leading-none tracking-tight text-[#1c7a6e]">
                 {formatNumber((dashboard.ultimas24h ?? { comInteracao: 0 }).comInteracao)}
               </strong>
-              <span className="mt-2 block text-[0.88rem] text-[#6f604d]">
+              <span className="mt-2 block text-[0.88rem] text-[#697586]">
                 Tiveram interação · {formatDecimal((dashboard.ultimas24h ?? { taxaInteracao: 0 }).taxaInteracao)}%
               </span>
             </div>

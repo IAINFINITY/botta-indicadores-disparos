@@ -2,8 +2,15 @@
 
 :root {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #20170d;
+  /* Identidade visual Dr. Bem-estar — azul/branco, clínico e limpo */
+  --background: #f4f7fb;
+  --foreground: #2e3340;
+  --brand-sky: #78c8f0; /* azul do logo */
+  --brand-primary: #5275bf; /* azul primário do tema */
+  --brand-navy: #2e3340; /* navy escuro (seções/contraste) */
+  --brand-muted: #697586; /* texto secundário */
+  --brand-success: #2e9e8f; /* teal de sucesso */
+  --brand-alert: #ca1a20; /* vermelho de alerta */
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "Segoe UI", sans-serif;
 }
@@ -22,7 +29,7 @@ body {
   margin: 0;
   font-family: var(--font-body), sans-serif;
   color: var(--foreground);
-  background: #ffffff;
+  background: var(--background);
 }
 
 * {
