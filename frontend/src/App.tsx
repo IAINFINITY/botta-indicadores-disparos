@@ -531,35 +531,96 @@ function Funnel({ stages }: FunnelProps) {
 
 interface ConversationFeedProps {
   items: RecentConversation[];
+  onSelect: (conversation: RecentConversation) => void;
+  loadingId: number | null;
 }
 
-function ConversationFeed({ items }: ConversationFeedProps) {
+function ConversationFeed({ items, onSelect, loadingId }: ConversationFeedProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {items.map((item) => (
-        <article
-          key={`${item.patient}-${item.time}`}
-          className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <strong className="mb-1 block text-[#2e3340]">{item.patient}</strong>
-              <span className="text-[0.92rem] text-[#697586]">
-                {item.channel} • {item.topic}
+      {items.map((item) => {
+        const isLoading = loadingId === item.id;
+        return (
+          <article
+            key={item.id}
+            className="flex flex-col rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <strong className="mb-1 block text-[#2e3340]">{item.patient}</strong>
+                <span className="text-[0.92rem] text-[#697586]">
+                  {item.channel} • {item.topic}
+                </span>
+              </div>
+              <span
+                className={`rounded-full px-3 py-2 text-[0.82rem] font-bold whitespace-nowrap ${getStatusClass(
+                  item.status,
+                )}`}
+              >
+                {item.status}
               </span>
             </div>
-            <span
-              className={`rounded-full px-3 py-2 text-[0.82rem] font-bold whitespace-nowrap ${getStatusClass(
-                item.status,
-              )}`}
-            >
-              {item.status}
+            <p className="mb-2 mt-4 leading-6 text-[#2e3340]">{item.lastMessage}</p>
+            <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+              <small className="text-[#697586]">{item.time}</small>
+              <button
+                type="button"
+                onClick={() => onSelect(item)}
+                disabled={isLoading}
+                className="inline-flex items-center gap-1 text-[0.85rem] font-semibold text-[#5275bf] transition hover:text-[#3a5aa0] disabled:opacity-60"
+              >
+                {isLoading ? "Abrindo…" : "Ver diálogo →"}
+              </button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+interface ThreadModalProps {
+  thread: ConversationThread | null;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+}
+
+function ThreadModal({ thread, loading, error, onClose }: ThreadModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(20,28,40,0.45)] backdrop-blur-sm sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-[24px] border border-[rgba(82,117,191,0.16)] bg-[#ffffff] shadow-[0_20px_60px_rgba(20,28,40,0.22)] sm:rounded-[24px]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[rgba(46,51,64,0.10)] px-5 py-4">
+          <div className="min-w-0">
+            <span className="block text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[#5275bf]">
+              Conversas recentes
             </span>
+            <strong className="block truncate text-[#2e3340]">
+              {thread?.patient || "Conversa"}
+            </strong>
           </div>
-          <p className="mb-2 mt-4 leading-6 text-[#2e3340]">{item.lastMessage}</p>
-          <small className="text-[#697586]">{item.time}</small>
-        </article>
-      ))}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(46,51,64,0.14)] text-[#2e3340] transition hover:bg-[rgba(46,51,64,0.05)]"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="overflow-y-auto px-5 py-4">
+          <ThreadView thread={thread} loading={loading} error={error} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -575,6 +636,7 @@ export default function App() {
   const [activeThread, setActiveThread] = useState<ConversationThread | null>(null);
   const [threadLoadingId, setThreadLoadingId] = useState<number | null>(null);
   const [threadError, setThreadError] = useState<string | null>(null);
+  const [threadModalOpen, setThreadModalOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -628,7 +690,7 @@ export default function App() {
     setThreadLoadingId(null);
   }, []);
 
-  const openThread = useCallback(async (conversation: ConversationContact) => {
+  const openThread = useCallback(async (conversation: { id: number }) => {
     setThreadLoadingId(conversation.id);
     setThreadError(null);
     setActiveThread(null);
@@ -645,18 +707,34 @@ export default function App() {
     }
   }, []);
 
+  const openRecentThread = useCallback(
+    (conversation: RecentConversation) => {
+      setThreadModalOpen(true);
+      openThread(conversation);
+    },
+    [openThread],
+  );
+
+  const closeThreadModal = useCallback(() => {
+    setThreadModalOpen(false);
+    setActiveThread(null);
+    setThreadError(null);
+    setThreadLoadingId(null);
+  }, []);
+
   useEffect(() => {
-    if (!drilldownView) {
+    if (!drilldownView && !threadModalOpen) {
       return;
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setDrilldownView(null);
+        setThreadModalOpen(false);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drilldownView]);
+  }, [drilldownView, threadModalOpen]);
 
   if (loading && !dashboard) {
     return (
@@ -895,7 +973,11 @@ export default function App() {
             title="Fila de acompanhamento"
             description="Contexto, urgência e assunto das últimas interações para o time agir rápido."
           />
-          <ConversationFeed items={dashboard.conversasRecentes} />
+          <ConversationFeed
+            items={dashboard.conversasRecentes}
+            onSelect={openRecentThread}
+            loadingId={threadModalOpen ? threadLoadingId : null}
+          />
         </div>
       </section>
 
@@ -910,6 +992,15 @@ export default function App() {
           onSelect={openThread}
           onBack={backToList}
           onClose={closeDrilldown}
+        />
+      ) : null}
+
+      {threadModalOpen ? (
+        <ThreadModal
+          thread={activeThread}
+          loading={threadLoadingId !== null}
+          error={threadError}
+          onClose={closeThreadModal}
         />
       ) : null}
     </main>

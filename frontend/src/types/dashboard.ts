@@ -38,6 +38,7 @@ export interface FunnelStage {
 }
 
 export interface RecentConversation {
+  id: number;
   patient: string;
   status: string;
   channel: string;
@@ -47,7 +48,6 @@ export interface RecentConversation {
 }
 
 export interface ConversationContact extends RecentConversation {
-  id: number;
   interacoes: number;
   respondeu: boolean;
   aguardandoHumano: boolean;

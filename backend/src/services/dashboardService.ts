@@ -384,6 +384,7 @@ function buildRecentConversations(conversations: FilteredConversation[]): Recent
     .sort((a, b) => b.latestActivityAt - a.latestActivityAt)
     .slice(0, 6)
     .map((conversation) => ({
+      id: conversation.id,
       patient: conversation.patient,
       status: conversation.status,
       channel: conversation.channel,
