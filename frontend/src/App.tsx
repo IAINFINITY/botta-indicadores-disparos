@@ -11,7 +11,7 @@ import type {
   RecentConversation,
   ThreadAuthor,
   ThreadMessage,
-  TopicSummary,
+  QuestionSummary,
 } from "./types/dashboard";
 
 const PERIOD_OPTIONS: { label: string; days: number }[] = [
@@ -444,16 +444,18 @@ interface BarChartProps {
 }
 
 function BarChart({ items }: BarChartProps) {
-  const maxValue = Math.max(1, ...items.map((item) => item.acumulado));
+  // Só o período de 30 dias quebra as barras em várias fileiras; aí vale expandir.
+  // Para 24h/7 dias mantemos compacto para não sobrar espaço em branco.
+  const expanded = items.length > 7;
+  const barHeight = expanded ? "h-20 sm:h-24" : "h-28 sm:h-32";
 
   return (
     <div className="rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(237,243,250,0.85))] p-3 pb-1">
-      <div className="grid min-h-[220px] grid-cols-7 items-end gap-2 sm:min-h-[300px] sm:gap-3">
+      <div className="grid grid-cols-7 items-end gap-2 sm:gap-3">
         {items.map((item) => (
           <div key={item.day} className="grid justify-items-center gap-2">
             <div
-              className="flex min-h-12 w-full items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#5275bf,#78c8f0)] pt-3 font-bold text-[#ffffff] shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)]"
-              style={{ height: `${(item.acumulado / maxValue) * 100}%` }}
+              className={`flex w-full items-start justify-center rounded-[22px_22px_10px_10px] bg-[linear-gradient(180deg,#5275bf,#78c8f0)] pt-3 font-bold text-[#ffffff] shadow-[inset_0_-14px_20px_rgba(255,255,255,0.16)] ${barHeight}`}
             >
               <span className="text-[0.85rem] sm:text-[1rem]">{formatNumber(item.acumulado)}</span>
             </div>
@@ -466,31 +468,29 @@ function BarChart({ items }: BarChartProps) {
   );
 }
 
-interface TopicListProps {
-  topics: TopicSummary[];
+interface QuestionListProps {
+  questions: QuestionSummary[];
 }
 
-function TopicList({ topics }: TopicListProps) {
+function QuestionList({ questions }: QuestionListProps) {
   return (
     <div className="grid gap-3">
-      {topics.map((topic) => (
+      {questions.map((item, index) => (
         <article
-          key={topic.name}
+          key={`${item.topic}-${index}`}
           className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
         >
-          <div className="flex items-start justify-between gap-4">
-            <strong className="mb-1 block text-[#2e3340]">{topic.name}</strong>
-            <span className="font-[family-name:var(--font-display)] text-[1.1rem] text-[#2e3340]">
-              {topic.share}%
+          <div className="flex items-start justify-between gap-3">
+            <span className="inline-flex items-center rounded-full bg-[rgba(82,117,191,0.1)] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#5275bf]">
+              {item.topic}
             </span>
+            {item.count > 1 ? (
+              <span className="shrink-0 font-[family-name:var(--font-display)] text-[1rem] text-[#697586]">
+                {item.count}x
+              </span>
+            ) : null}
           </div>
-          <div className="my-3 h-2 overflow-hidden rounded-full bg-[rgba(46,51,64,0.08)]">
-            <span
-              className="block h-full rounded-full bg-[linear-gradient(90deg,#5275bf,#78c8f0)]"
-              style={{ width: `${topic.share}%` }}
-            />
-          </div>
-          <p className="m-0 leading-6 text-[#2e3340] opacity-85">{topic.resume}</p>
+          <p className="m-0 mt-3 leading-6 text-[#2e3340]">{item.question}</p>
         </article>
       ))}
     </div>
@@ -901,7 +901,7 @@ export default function App() {
         />
       </section>
 
-      <section className="mb-5 grid gap-4 lg:grid-cols-[1.4fr_1fr] lg:gap-5">
+      <section className="mb-5">
         <div className={panelClass}>
           <SectionHeading
             eyebrow="Chatwoot"
@@ -909,39 +909,37 @@ export default function App() {
             description="Leitura acumulada para identificar picos, sazonalidade e o ritmo de crescimento do volume."
           />
           <BarChart items={dashboard.acumuladoDiario} />
-        </div>
 
-        <div className={panelClass}>
-          <SectionHeading
-            eyebrow="Panorama"
-            title="Status da operação"
-            description="O que foi respondido, o que precisa de apoio humano e onde estão as oportunidades."
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <MetricCard
-              label="Total de conversas"
-              value={formatNumber(dashboard.overview.totalConversas)}
-              helper="Base consolidada no período"
-              accent="sun"
-            />
-            <MetricCard
-              label="Respondidas"
-              value={formatNumber(dashboard.overview.respondidas)}
-              helper="Fluxos bem encaminhados"
-              accent="mint"
-            />
-            <MetricCard
-              label="Aguardando humano"
-              value={formatNumber(dashboard.overview.aguardandoHumano)}
-              helper="Casos para o time"
-              accent="coral"
-            />
-            <MetricCard
-              label="Oportunidades"
-              value={formatNumber(dashboard.overview.oportunidades)}
-              helper="Leads aquecidos"
-              accent="ink"
-            />
+          <div className="mt-6">
+            <span className="mb-3 inline-flex items-center gap-2 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#5275bf]">
+              Status da operação
+            </span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <MetricCard
+                label="Total de conversas"
+                value={formatNumber(dashboard.overview.totalConversas)}
+                helper="Base consolidada no período"
+                accent="sun"
+              />
+              <MetricCard
+                label="Respondidas"
+                value={formatNumber(dashboard.overview.respondidas)}
+                helper="Fluxos bem encaminhados"
+                accent="mint"
+              />
+              <MetricCard
+                label="Aguardando humano"
+                value={formatNumber(dashboard.overview.aguardandoHumano)}
+                helper="Casos para o time"
+                accent="coral"
+              />
+              <MetricCard
+                label="Oportunidades"
+                value={formatNumber(dashboard.overview.oportunidades)}
+                helper="Leads aquecidos"
+                accent="ink"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -949,11 +947,11 @@ export default function App() {
       <section className="mb-5 grid gap-4 lg:grid-cols-2 lg:gap-5">
         <div className={panelClass}>
           <SectionHeading
-            eyebrow="Tópicos tratados"
-            title="Resumo temático das conversas"
-            description="Uma leitura rápida dos principais assuntos para orientar campanhas e atendimento."
+            eyebrow="Principais questionamentos"
+            title="O que os pacientes mais perguntam"
+            description="Lista das principais dúvidas levantadas após o disparo, para orientar conteúdo e atendimento."
           />
-          <TopicList topics={dashboard.topicos} />
+          <QuestionList questions={dashboard.questionamentos} />
         </div>
 
         <div className={panelClass}>

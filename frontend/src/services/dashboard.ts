@@ -14,7 +14,7 @@ function isDashboardData(value: unknown): value is DashboardData {
     typeof payload.updatedAt === "string" &&
     typeof payload.summary === "object" &&
     Array.isArray(payload.acumuladoDiario) &&
-    Array.isArray(payload.topicos) &&
+    Array.isArray(payload.questionamentos) &&
     typeof payload.overview === "object" &&
     Array.isArray(payload.funil) &&
     Array.isArray(payload.conversasRecentes)

@@ -13,10 +13,10 @@ export interface AccumulatedDay {
   acumulado: number;
 }
 
-export interface TopicSummary {
-  name: string;
-  share: number;
-  resume: string;
+export interface QuestionSummary {
+  question: string;
+  topic: string;
+  count: number;
 }
 
 export interface OverviewSummary {
@@ -114,7 +114,7 @@ export interface DashboardData {
   summary: DashboardSummary;
   ultimas24h: Last24hSummary;
   acumuladoDiario: AccumulatedDay[];
-  topicos: TopicSummary[];
+  questionamentos: QuestionSummary[];
   overview: OverviewSummary;
   funil: FunnelStage[];
   conversasRecentes: RecentConversation[];

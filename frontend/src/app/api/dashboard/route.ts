@@ -11,7 +11,7 @@ function toPublicDashboardData(payload: Record<string, unknown>): DashboardData 
     summary: payload.summary as DashboardData["summary"],
     ultimas24h: payload.ultimas24h as DashboardData["ultimas24h"],
     acumuladoDiario: payload.acumuladoDiario as DashboardData["acumuladoDiario"],
-    topicos: payload.topicos as DashboardData["topicos"],
+    questionamentos: payload.questionamentos as DashboardData["questionamentos"],
     overview: payload.overview as DashboardData["overview"],
     funil: payload.funil as DashboardData["funil"],
     conversasRecentes: payload.conversasRecentes as DashboardData["conversasRecentes"],

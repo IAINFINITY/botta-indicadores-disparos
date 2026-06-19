@@ -9,7 +9,7 @@ import type {
   RecentConversation,
   ThreadAuthor,
   ThreadMessage,
-  TopicSummary,
+  QuestionSummary,
 } from "../types/dashboard.js";
 import { buildDashboardAiSeed, getAiConfig } from "../ai/index.js";
 import { createChatwootClient, type ChatwootConversationSummary, type ChatwootMessage } from "./chatwootClient.js";
@@ -54,6 +54,7 @@ interface FilteredConversation {
   status: string;
   channel: string;
   lastMessage: string;
+  firstQuestion: string;
   topic: string;
   time: string;
   triggerCreatedAt: number;
@@ -188,12 +189,12 @@ function mapStatus(hasResponse: boolean, waitingForHuman: boolean): string {
   return "resolvido";
 }
 
-function createEmptyTopics(): TopicSummary[] {
+function createEmptyQuestionamentos(): QuestionSummary[] {
   return [
     {
-      name: "Sem conversas válidas",
-      share: 100,
-      resume: "Ainda não encontramos disparos válidos no período consultado.",
+      question: "Ainda não há questionamentos registrados no período consultado.",
+      topic: "Sem dados",
+      count: 0,
     },
   ];
 }
@@ -273,6 +274,7 @@ async function analyzeConversation(
     status: mapStatus(hasContactResponse, waitingForHuman),
     channel: formatChannel(conversation.meta?.channel),
     lastMessage: getMessageContent(latestMessage),
+    firstQuestion: hasContactResponse ? getMessageContent(topicSource) : "",
     topic: classifyTopic(getMessageContent(topicSource)),
     time: formatDateTime(latestActivityAt, timeZone),
     triggerCreatedAt,
@@ -330,32 +332,30 @@ function buildDailySeries(conversations: FilteredConversation[], lookbackDays: n
   });
 }
 
-function buildTopics(conversations: FilteredConversation[]): TopicSummary[] {
-  if (conversations.length === 0) {
-    return createEmptyTopics();
-  }
-
-  const counts = new Map<string, { count: number; samples: string[] }>();
+function buildQuestionamentos(conversations: FilteredConversation[]): QuestionSummary[] {
+  const grouped = new Map<string, QuestionSummary>();
 
   for (const conversation of conversations) {
-    const current = counts.get(conversation.topic) || { count: 0, samples: [] };
-    current.count += 1;
-    if (conversation.hasContactResponse && current.samples.length < 3) {
-      current.samples.push(conversation.lastMessage);
+    if (!conversation.hasContactResponse) {
+      continue;
     }
-    counts.set(conversation.topic, current);
+
+    const question = conversation.firstQuestion.trim();
+    if (!question) {
+      continue;
+    }
+
+    const key = normalizeForMatch(question);
+    const current = grouped.get(key);
+    if (current) {
+      current.count += 1;
+    } else {
+      grouped.set(key, { question, topic: conversation.topic, count: 1 });
+    }
   }
 
-  return [...counts.entries()]
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 4)
-    .map(([topic, data]) => ({
-      name: topic,
-      share: Math.round((data.count / conversations.length) * 100),
-      resume:
-        data.samples[0] ||
-        `${data.count} conversa${data.count === 1 ? "" : "s"} com esse tema detectado após o disparo.`,
-    }));
+  const ranked = [...grouped.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+  return ranked.length > 0 ? ranked : createEmptyQuestionamentos();
 }
 
 function buildFunil(summary: ReturnType<typeof buildSummary>): FunnelStage[] {
@@ -489,7 +489,7 @@ export async function getDashboardData(options: { days?: number } = {}): Promise
 
   const summary = buildSummary(analyzedConversations);
   const acumuladoDiario = buildDailySeries(analyzedConversations, lookbackDays, timeZone);
-  const topicos = buildTopics(analyzedConversations);
+  const questionamentos = buildQuestionamentos(analyzedConversations);
   const funil = buildFunil(summary);
   const conversasRecentes = buildRecentConversations(analyzedConversations);
   const ultimas24h = buildLast24h(analyzedConversations);
@@ -528,7 +528,7 @@ export async function getDashboardData(options: { days?: number } = {}): Promise
     },
     ultimas24h,
     acumuladoDiario,
-    topicos,
+    questionamentos,
     overview: summary.overview,
     funil,
     conversasRecentes,

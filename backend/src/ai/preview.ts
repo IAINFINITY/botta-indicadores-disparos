@@ -84,8 +84,11 @@ function formatDashboardOverview(parameters: {
     )
     .join("\n");
 
-  const topicLines = dashboard.topicos
-    .map((topic, index) => `${index + 1}. ${topic.name} (${topic.share}%) - ${topic.resume}`)
+  const topicLines = dashboard.questionamentos
+    .map(
+      (item, index) =>
+        `${index + 1}. [${item.topic}] ${item.question}${item.count > 1 ? ` (${item.count}x)` : ""}`,
+    )
     .join("\n");
 
   const dailyLines = dashboard.acumuladoDiario
@@ -106,8 +109,8 @@ function formatDashboardOverview(parameters: {
     "### Funnel",
     JSON.stringify(dashboard.funil, null, 2),
     "",
-    "### Topics",
-    topicLines || "Sem topicos disponiveis.",
+    "### Principais questionamentos",
+    topicLines || "Sem questionamentos disponiveis.",
     "",
     "### Daily accumulation",
     dailyLines || "Sem serie diaria disponivel.",
