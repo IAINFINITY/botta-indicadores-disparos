@@ -75,6 +75,20 @@ export interface FunnelStage {
   value: number;
 }
 
+export interface ResponseHourBucket {
+  hour: number; // 0–23 (no fuso configurado)
+  label: string; // ex.: "08h"
+  count: number; // total de respostas de leads nessa hora
+}
+
+export interface ResponseHoursSummary {
+  totalRespostas: number;
+  picoHour: number; // hora com mais respostas; -1 se não houver dados
+  picoLabel: string; // ex.: "20h–21h" ou "—"
+  picoCount: number; // respostas no horário de pico
+  buckets: ResponseHourBucket[]; // sempre 24 posições (00h–23h)
+}
+
 export interface RecentConversation {
   id: number;
   patient: string;
@@ -119,5 +133,6 @@ export interface DashboardData {
   funil: FunnelStage[];
   conversasRecentes: RecentConversation[];
   contatos: ConversationContact[];
+  horariosResposta: ResponseHoursSummary;
   aiContext?: DashboardAiSeed;
 }

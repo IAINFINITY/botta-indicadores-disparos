@@ -9,6 +9,7 @@ import type {
   DashboardData,
   FunnelStage,
   RecentConversation,
+  ResponseHoursSummary,
   ThreadAuthor,
   ThreadMessage,
   QuestionSummary,
@@ -463,6 +464,81 @@ function BarChart({ items }: BarChartProps) {
             <strong className="text-[#697586]">+{item.novasConversas}</strong>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+interface ResponseHoursChartProps {
+  data: ResponseHoursSummary;
+}
+
+function ResponseHoursChart({ data }: ResponseHoursChartProps) {
+  if (!data || data.totalRespostas === 0) {
+    return (
+      <p className="py-6 text-center text-[0.92rem] text-[#697586]">
+        Ainda não há respostas de leads registradas no período.
+      </p>
+    );
+  }
+
+  const maxCount = Math.max(1, ...data.buckets.map((bucket) => bucket.count));
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-[18px] border border-[rgba(46,51,64,0.08)] bg-[#f5f8fc] p-4 sm:p-5">
+        <div>
+          <span className="block text-[0.72rem] font-semibold uppercase leading-tight tracking-[0.08em] text-[#697586]">
+            Horário de pico
+          </span>
+          <strong className="mt-2 block font-[family-name:var(--font-display)] text-[clamp(1.7rem,5vw,2.3rem)] leading-none tracking-tight text-[#2e3340]">
+            {data.picoLabel}
+          </strong>
+          <span className="mt-2 block text-[0.82rem] leading-5 text-[#697586]">
+            {formatNumber(data.picoCount)} respostas nesse horário
+          </span>
+        </div>
+        <div className="text-right">
+          <strong className="block font-[family-name:var(--font-display)] text-[1.4rem] leading-none text-[#2e9e8f]">
+            {formatNumber(data.totalRespostas)}
+          </strong>
+          <span className="mt-1 block text-[0.78rem] text-[#697586]">respostas no período</span>
+        </div>
+      </div>
+
+      <div className="rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(237,243,250,0.85))] p-4">
+        <div className="flex h-32 items-end gap-[3px] sm:h-40 sm:gap-[5px]">
+          {data.buckets.map((bucket) => {
+            const isPeak = bucket.hour === data.picoHour;
+            const heightPct = bucket.count > 0 ? Math.max(8, (bucket.count / maxCount) * 100) : 2;
+            return (
+              <div
+                key={bucket.hour}
+                className="flex h-full flex-1 items-end"
+                title={`${bucket.label}: ${bucket.count} resposta${bucket.count === 1 ? "" : "s"}`}
+              >
+                <div
+                  className={`w-full rounded-t-[6px] ${
+                    isPeak
+                      ? "bg-[linear-gradient(180deg,#2e9e8f,#7fd9c9)]"
+                      : "bg-[linear-gradient(180deg,#5275bf,#78c8f0)]"
+                  } ${bucket.count === 0 ? "opacity-40" : ""}`}
+                  style={{ height: `${heightPct}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex gap-[3px] sm:gap-[5px]">
+          {data.buckets.map((bucket) => (
+            <small
+              key={bucket.hour}
+              className="flex-1 text-center text-[0.58rem] leading-none text-[#697586] sm:text-[0.62rem]"
+            >
+              {bucket.hour % 3 === 0 ? `${String(bucket.hour).padStart(2, "0")}h` : ""}
+            </small>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -941,6 +1017,17 @@ export default function App() {
               />
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mb-5">
+        <div className={panelClass}>
+          <SectionHeading
+            eyebrow="Comportamento dos leads"
+            title="Horários de pico de resposta"
+            description="Distribuição das respostas dos leads por hora do dia. Use para programar disparos e reforçar o atendimento nas janelas de maior engajamento."
+          />
+          <ResponseHoursChart data={dashboard.horariosResposta} />
         </div>
       </section>
 

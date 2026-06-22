@@ -37,6 +37,20 @@ export interface FunnelStage {
   value: number;
 }
 
+export interface ResponseHourBucket {
+  hour: number;
+  label: string;
+  count: number;
+}
+
+export interface ResponseHoursSummary {
+  totalRespostas: number;
+  picoHour: number;
+  picoLabel: string;
+  picoCount: number;
+  buckets: ResponseHourBucket[];
+}
+
 export interface RecentConversation {
   id: number;
   patient: string;
@@ -81,4 +95,5 @@ export interface DashboardData {
   funil: FunnelStage[];
   conversasRecentes: RecentConversation[];
   contatos: ConversationContact[];
+  horariosResposta: ResponseHoursSummary;
 }

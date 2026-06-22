@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
-import { getConversationThread, getDashboardData } from "../services/dashboardService.js";
+import { getConversationThread } from "../services/dashboardService.js";
+import { getDashboardSnapshot } from "../services/snapshotService.js";
 
 export async function dashboardHandler(req: Request, res: Response) {
   try {
     const rawDays = Number(req.query.days);
     const days = Number.isFinite(rawDays) && rawDays > 0 ? rawDays : undefined;
-    const dashboard = await getDashboardData({ days });
+    const dashboard = await getDashboardSnapshot(days);
     res.json(dashboard);
   } catch (error) {
     res.status(500).json({

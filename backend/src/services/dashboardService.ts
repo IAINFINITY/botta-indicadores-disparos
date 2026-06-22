@@ -7,6 +7,7 @@ import type {
   FunnelStage,
   Last24hSummary,
   RecentConversation,
+  ResponseHoursSummary,
   ThreadAuthor,
   ThreadMessage,
   QuestionSummary,
@@ -64,6 +65,7 @@ interface FilteredConversation {
   waitingForHuman: boolean;
   disparoNoPeriodo: boolean;
   interagiuNoPeriodo: boolean;
+  responseHours: number[];
 }
 
 interface DailyWindowEntry {
@@ -152,6 +154,22 @@ function formatDateTime(value: number, timeZone: string): string {
     timeStyle: "short",
     timeZone,
   }).format(new Date(value * 1000));
+}
+
+function getHourInTimeZone(epochSeconds: number, timeZone: string): number {
+  if (!epochSeconds) {
+    return -1;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(epochSeconds * 1000));
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value);
+  // Alguns ambientes retornam 24 à meia-noite com hour12:false — normaliza para 0–23.
+  return Number.isFinite(hour) ? hour % 24 : -1;
 }
 
 function formatChannel(channel?: string | null): string {
@@ -267,6 +285,9 @@ async function analyzeConversation(
   const interagiuNoPeriodo = contactMessagesAfterTrigger.some(
     (message) => Number(message.created_at || 0) >= cutoffEpochSeconds,
   );
+  const responseHours = contactMessagesAfterTrigger
+    .map((message) => getHourInTimeZone(Number(message.created_at || 0), timeZone))
+    .filter((hour) => hour >= 0);
 
   return {
     id: conversation.id,
@@ -284,6 +305,7 @@ async function analyzeConversation(
     waitingForHuman,
     disparoNoPeriodo: triggerCreatedAt >= cutoffEpochSeconds,
     interagiuNoPeriodo,
+    responseHours,
   };
 }
 
@@ -406,6 +428,15 @@ function clampDays(value: number, fallback: number): number {
   return Math.min(90, Math.max(1, Math.floor(value)));
 }
 
+/**
+ * Resolve o período efetivo (em dias) a partir do parâmetro recebido, aplicando o
+ * mesmo clamp/fallback usado internamente. Fonte única de verdade para a chave do snapshot.
+ */
+export function resolvePeriodDays(days?: number): number {
+  const config = getChatwootConfig();
+  return clampDays(Number(days), config.lookbackDays);
+}
+
 function buildLast24h(conversations: FilteredConversation[]): Last24hSummary {
   const cutoff = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
   const opened = conversations.filter((conversation) => conversation.triggerCreatedAt >= cutoff);
@@ -416,6 +447,46 @@ function buildLast24h(conversations: FilteredConversation[]): Last24hSummary {
     chatsAbertos,
     comInteracao,
     taxaInteracao: chatsAbertos > 0 ? Number(((comInteracao / chatsAbertos) * 100).toFixed(1)) : 0,
+  };
+}
+
+function buildHorariosResposta(conversations: FilteredConversation[]): ResponseHoursSummary {
+  const counts = new Array<number>(24).fill(0);
+
+  for (const conversation of conversations) {
+    for (const hour of conversation.responseHours) {
+      if (hour >= 0 && hour < 24) {
+        counts[hour] += 1;
+      }
+    }
+  }
+
+  const totalRespostas = counts.reduce((sum, value) => sum + value, 0);
+
+  let picoHour = -1;
+  let picoCount = 0;
+  if (totalRespostas > 0) {
+    for (let hour = 0; hour < 24; hour += 1) {
+      if (counts[hour] > picoCount) {
+        picoCount = counts[hour];
+        picoHour = hour;
+      }
+    }
+  }
+
+  const pad = (hour: number) => String(hour).padStart(2, "0");
+  const buckets = counts.map((count, hour) => ({
+    hour,
+    label: `${pad(hour)}h`,
+    count,
+  }));
+
+  return {
+    totalRespostas,
+    picoHour,
+    picoCount,
+    picoLabel: picoHour >= 0 ? `${pad(picoHour)}h–${pad((picoHour + 1) % 24)}h` : "—",
+    buckets,
   };
 }
 
@@ -450,7 +521,7 @@ export async function getDashboardData(options: { days?: number } = {}): Promise
   const config = getChatwootConfig();
   assertRequiredConfig(config);
   const timeZone = process.env.TIMEZONE || DEFAULT_TIME_ZONE;
-  const lookbackDays = clampDays(Number(options.days), config.lookbackDays);
+  const lookbackDays = resolvePeriodDays(options.days);
 
   const client = createChatwootClient({
     baseUrl: config.baseUrl,
@@ -494,6 +565,7 @@ export async function getDashboardData(options: { days?: number } = {}): Promise
   const conversasRecentes = buildRecentConversations(analyzedConversations);
   const ultimas24h = buildLast24h(analyzedConversations);
   const contatos = buildContatos(analyzedConversations);
+  const horariosResposta = buildHorariosResposta(analyzedConversations);
   const aiConfig = getAiConfig();
   const aiContext: DashboardAiSeed = buildDashboardAiSeed({
     generatedAt: new Date().toISOString(),
@@ -533,6 +605,7 @@ export async function getDashboardData(options: { days?: number } = {}): Promise
     funil,
     conversasRecentes,
     contatos,
+    horariosResposta,
     aiContext,
   };
 }

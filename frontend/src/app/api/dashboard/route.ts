@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
 import { getServerEnv } from "@/lib/serverEnv";
-import type { DashboardData } from "@/types/dashboard";
+import type { DashboardData, ResponseHoursSummary } from "@/types/dashboard";
 
 const backendBaseUrl = getServerEnv("BACKEND_URL", "http://127.0.0.1:3333");
+
+function emptyHorariosResposta(): ResponseHoursSummary {
+  return {
+    totalRespostas: 0,
+    picoHour: -1,
+    picoLabel: "—",
+    picoCount: 0,
+    buckets: Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}h`,
+      count: 0,
+    })),
+  };
+}
 
 function toPublicDashboardData(payload: Record<string, unknown>): DashboardData {
   return {
@@ -16,6 +30,8 @@ function toPublicDashboardData(payload: Record<string, unknown>): DashboardData 
     funil: payload.funil as DashboardData["funil"],
     conversasRecentes: payload.conversasRecentes as DashboardData["conversasRecentes"],
     contatos: (payload.contatos as DashboardData["contatos"]) ?? [],
+    horariosResposta:
+      (payload.horariosResposta as DashboardData["horariosResposta"]) ?? emptyHorariosResposta(),
   };
 }
 

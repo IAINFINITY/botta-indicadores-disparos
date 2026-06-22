@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dr-bem-estar-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-drbemestar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-drbemestar}
+      POSTGRES_DB: ${POSTGRES_DB:-drbemestar}
+    ports:
+      - "5402:5432"
+    volumes:
+      - drbemestar-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-drbemestar} -d ${POSTGRES_DB:-drbemestar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -6,8 +24,13 @@ services:
     container_name: botta-indicadores-backend
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-drbemestar}:${POSTGRES_PASSWORD:-drbemestar}@postgres:5432/${POSTGRES_DB:-drbemestar}
     ports:
       - "8002:3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -22,3 +45,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  drbemestar-pgdata:
