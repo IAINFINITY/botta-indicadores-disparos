@@ -383,18 +383,22 @@ function buildQuestionamentos(conversations: FilteredConversation[]): QuestionSu
 function buildFunil(summary: ReturnType<typeof buildSummary>): FunnelStage[] {
   return [
     {
+      key: "disparos",
       label: "Disparos identificados",
       value: summary.disparosRealizados,
     },
     {
+      key: "comResposta",
       label: "Com resposta",
       value: summary.contatosInteragiram,
     },
     {
+      key: "aguardandoHumano",
       label: "Aguardando humano",
       value: summary.overview.aguardandoHumano,
     },
     {
+      key: "emAndamento",
       label: "Em andamento",
       value: Math.max(summary.contatosInteragiram - summary.overview.aguardandoHumano, 0),
     },
@@ -502,6 +506,7 @@ function buildContatos(conversations: FilteredConversation[]): ConversationConta
       lastMessage: conversation.lastMessage,
       topic: conversation.topic,
       time: conversation.time,
+      firstQuestion: conversation.firstQuestion,
       interacoes: conversation.contactMessageCount,
       respondeu: conversation.hasContactResponse,
       aguardandoHumano: conversation.waitingForHuman,

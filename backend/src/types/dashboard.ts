@@ -71,6 +71,7 @@ export interface DashboardAiSeed {
 }
 
 export interface FunnelStage {
+  key: string;
   label: string;
   value: number;
 }
@@ -100,6 +101,7 @@ export interface RecentConversation {
 }
 
 export interface ConversationContact extends RecentConversation {
+  firstQuestion: string;
   interacoes: number;
   respondeu: boolean;
   aguardandoHumano: boolean;

@@ -21,13 +21,27 @@ const PERIOD_OPTIONS: { label: string; days: number }[] = [
   { label: "30 dias", days: 30 },
 ];
 
-type DrilldownView = "disparos" | "interacoes" | "engajados" | "oportunidades";
+type DrilldownView =
+  | "disparos"
+  | "interacoes"
+  | "engajados"
+  | "oportunidades"
+  | "todos"
+  | "aguardandoHumano"
+  | "comResposta"
+  | "emAndamento"
+  | "questionamento";
 
 const DRILLDOWN_META: Record<DrilldownView, { eyebrow: string; noun: string }> = {
   disparos: { eyebrow: "Disparos realizados", noun: "disparos enviados no período" },
   interacoes: { eyebrow: "Interações no período", noun: "contatos que interagiram no período" },
   engajados: { eyebrow: "Clientes engajados", noun: "contatos que interagiram" },
   oportunidades: { eyebrow: "Oportunidades", noun: "leads em aberto" },
+  todos: { eyebrow: "Total de conversas", noun: "conversas com disparo identificado" },
+  aguardandoHumano: { eyebrow: "Aguardando humano", noun: "casos que aguardam o time" },
+  comResposta: { eyebrow: "Com resposta", noun: "contatos que responderam ao disparo" },
+  emAndamento: { eyebrow: "Em andamento", noun: "conversas respondidas sem pendência humana" },
+  questionamento: { eyebrow: "Questionamento", noun: "contatos com esta pergunta" },
 };
 
 function filterContacts(view: DrilldownView, contacts: ConversationContact[]): ConversationContact[] {
@@ -37,13 +51,56 @@ function filterContacts(view: DrilldownView, contacts: ConversationContact[]): C
   if (view === "interacoes") {
     return contacts.filter((contact) => contact.interagiuNoPeriodo);
   }
-  if (view === "engajados") {
+  if (view === "engajados" || view === "comResposta") {
     return contacts.filter((contact) => contact.respondeu);
   }
   if (view === "oportunidades") {
     return contacts.filter((contact) => !contact.aguardandoHumano);
   }
+  if (view === "aguardandoHumano") {
+    return contacts.filter((contact) => contact.aguardandoHumano);
+  }
+  if (view === "emAndamento") {
+    return contacts.filter((contact) => contact.respondeu && !contact.aguardandoHumano);
+  }
+  // "todos" e "questionamento" (este último filtrado por filterByQuestion) caem no retorno completo.
   return contacts;
+}
+
+// Espelha normalizeForMatch do backend, usado para agrupar os questionamentos.
+function normalizeQuestion(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function filterByQuestion(
+  contacts: ConversationContact[],
+  question: QuestionSummary,
+): ConversationContact[] {
+  const target = normalizeQuestion(question.question);
+  if (!target) {
+    return [];
+  }
+  return contacts.filter(
+    (contact) => contact.firstQuestion && normalizeQuestion(contact.firstQuestion) === target,
+  );
+}
+
+function mapFunnelStageToView(stage: FunnelStage, index: number): DrilldownView {
+  const byKey: Record<string, DrilldownView> = {
+    disparos: "todos",
+    comResposta: "comResposta",
+    aguardandoHumano: "aguardandoHumano",
+    emAndamento: "emAndamento",
+  };
+  if (stage.key && byKey[stage.key]) {
+    return byKey[stage.key];
+  }
+  // Fallback por índice (ordem definida em buildFunil): 0=todos,1=comResposta,2=aguardandoHumano,3=emAndamento
+  return (["todos", "comResposta", "aguardandoHumano", "emAndamento"] as DrilldownView[])[index] ?? "todos";
 }
 
 const STATUS_LEGEND: { status: string; meaning: string }[] = [
@@ -129,19 +186,40 @@ interface MetricCardProps {
   value: string;
   helper: string;
   accent: "sun" | "mint" | "coral" | "ink";
+  onClick?: () => void;
+  actionLabel?: string;
 }
 
-function MetricCard({ label, value, helper, accent }: MetricCardProps) {
-  return (
-    <article className={softCardClass}>
+function MetricCard({ label, value, helper, accent, onClick, actionLabel }: MetricCardProps) {
+  const inner = (
+    <>
       <div className={`mb-3 h-1.5 w-10 rounded-full ${getAccentBarClass(accent)}`} />
       <span className="block text-[0.82rem] leading-5 text-[#697586]">{label}</span>
       <strong className="my-2 block font-[family-name:var(--font-display)] text-[clamp(1.6rem,4vw,2.1rem)] leading-none tracking-tight text-[#2e3340]">
         {value}
       </strong>
       <span className="block text-[0.8rem] leading-5 text-[#697586]">{helper}</span>
-    </article>
+      {actionLabel ? (
+        <span className="mt-2 inline-flex items-center gap-1 text-[0.76rem] font-semibold text-[#2e9e8f]">
+          {actionLabel} <span aria-hidden>→</span>
+        </span>
+      ) : null}
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${softCardClass} w-full cursor-pointer text-left transition hover:border-[#5275bf] hover:shadow-[0_12px_30px_rgba(82,117,191,0.18)]`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <article className={softCardClass}>{inner}</article>;
 }
 
 interface KpiCardProps {
@@ -546,46 +624,77 @@ function ResponseHoursChart({ data }: ResponseHoursChartProps) {
 
 interface QuestionListProps {
   questions: QuestionSummary[];
+  onSelect: (question: QuestionSummary) => void;
 }
 
-function QuestionList({ questions }: QuestionListProps) {
+function QuestionList({ questions, onSelect }: QuestionListProps) {
   return (
     <div className="grid gap-3">
-      {questions.map((item, index) => (
-        <article
-          key={`${item.topic}-${index}`}
-          className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <span className="inline-flex items-center rounded-full bg-[rgba(82,117,191,0.1)] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#5275bf]">
-              {item.topic}
-            </span>
-            {item.count > 1 ? (
-              <span className="shrink-0 font-[family-name:var(--font-display)] text-[1rem] text-[#697586]">
-                {item.count}x
+      {questions.map((item, index) => {
+        const clickable = item.count > 0 && item.question.trim().length > 0;
+        const body = (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <span className="inline-flex items-center rounded-full bg-[rgba(82,117,191,0.1)] px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-[#5275bf]">
+                {item.topic}
+              </span>
+              {item.count > 1 ? (
+                <span className="shrink-0 font-[family-name:var(--font-display)] text-[1rem] text-[#697586]">
+                  {item.count}x
+                </span>
+              ) : null}
+            </div>
+            <p className="m-0 mt-3 leading-6 text-[#2e3340]">{item.question}</p>
+            {clickable ? (
+              <span className="mt-3 inline-flex items-center gap-1 text-[0.76rem] font-semibold text-[#2e9e8f]">
+                ver contatos <span aria-hidden>→</span>
               </span>
             ) : null}
-          </div>
-          <p className="m-0 mt-3 leading-6 text-[#2e3340]">{item.question}</p>
-        </article>
-      ))}
+          </>
+        );
+
+        if (clickable) {
+          return (
+            <button
+              key={`${item.topic}-${index}`}
+              type="button"
+              onClick={() => onSelect(item)}
+              className="w-full rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 text-left transition hover:border-[#2e9e8f] hover:shadow-[0_12px_30px_rgba(46,158,143,0.16)] sm:p-[18px]"
+            >
+              {body}
+            </button>
+          );
+        }
+
+        return (
+          <article
+            key={`${item.topic}-${index}`}
+            className="rounded-[22px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 sm:p-[18px]"
+          >
+            {body}
+          </article>
+        );
+      })}
     </div>
   );
 }
 
 interface FunnelProps {
   stages: FunnelStage[];
+  onSelectStage: (view: DrilldownView) => void;
 }
 
-function Funnel({ stages }: FunnelProps) {
+function Funnel({ stages, onSelectStage }: FunnelProps) {
   const maxValue = Math.max(1, ...stages.map((stage) => stage.value));
 
   return (
     <div className="grid gap-3">
-      {stages.map((stage) => (
-        <div
+      {stages.map((stage, index) => (
+        <button
           key={stage.label}
-          className="rounded-[20px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4"
+          type="button"
+          onClick={() => onSelectStage(mapFunnelStageToView(stage, index))}
+          className="w-full rounded-[20px] border border-[rgba(46,51,64,0.12)] bg-[rgba(255,255,255,0.9)] p-4 text-left transition hover:border-[#5275bf] hover:shadow-[0_12px_30px_rgba(82,117,191,0.18)]"
         >
           <div className="flex items-start justify-between gap-4">
             <span className="text-[#2e3340]">{stage.label}</span>
@@ -599,7 +708,7 @@ function Funnel({ stages }: FunnelProps) {
               style={{ width: `${(stage.value / maxValue) * 100}%` }}
             />
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -709,6 +818,7 @@ export default function App() {
   const [days, setDays] = useState(1);
 
   const [drilldownView, setDrilldownView] = useState<DrilldownView | null>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<QuestionSummary | null>(null);
   const [activeThread, setActiveThread] = useState<ConversationThread | null>(null);
   const [threadLoadingId, setThreadLoadingId] = useState<number | null>(null);
   const [threadError, setThreadError] = useState<string | null>(null);
@@ -753,11 +863,21 @@ export default function App() {
     setActiveThread(null);
     setThreadError(null);
     setThreadLoadingId(null);
+    setSelectedQuestion(null);
     setDrilldownView(view);
+  }, []);
+
+  const openQuestionDrilldown = useCallback((question: QuestionSummary) => {
+    setActiveThread(null);
+    setThreadError(null);
+    setThreadLoadingId(null);
+    setSelectedQuestion(question);
+    setDrilldownView("questionamento");
   }, []);
 
   const closeDrilldown = useCallback(() => {
     setDrilldownView(null);
+    setSelectedQuestion(null);
   }, []);
 
   const backToList = useCallback(() => {
@@ -996,24 +1116,32 @@ export default function App() {
                 value={formatNumber(dashboard.overview.totalConversas)}
                 helper="Base consolidada no período"
                 accent="sun"
+                onClick={() => openDrilldown("todos")}
+                actionLabel="ver conversas"
               />
               <MetricCard
                 label="Respondidas"
                 value={formatNumber(dashboard.overview.respondidas)}
                 helper="Fluxos bem encaminhados"
                 accent="mint"
+                onClick={() => openDrilldown("comResposta")}
+                actionLabel="ver conversas"
               />
               <MetricCard
                 label="Aguardando humano"
                 value={formatNumber(dashboard.overview.aguardandoHumano)}
                 helper="Casos para o time"
                 accent="coral"
+                onClick={() => openDrilldown("aguardandoHumano")}
+                actionLabel="ver casos"
               />
               <MetricCard
                 label="Oportunidades"
                 value={formatNumber(dashboard.overview.oportunidades)}
                 helper="Leads aquecidos"
                 accent="ink"
+                onClick={() => openDrilldown("oportunidades")}
+                actionLabel="ver detalhes"
               />
             </div>
           </div>
@@ -1038,7 +1166,7 @@ export default function App() {
             title="O que os pacientes mais perguntam"
             description="Lista das principais dúvidas levantadas após o disparo, para orientar conteúdo e atendimento."
           />
-          <QuestionList questions={dashboard.questionamentos} />
+          <QuestionList questions={dashboard.questionamentos} onSelect={openQuestionDrilldown} />
         </div>
 
         <div className={panelClass}>
@@ -1047,7 +1175,7 @@ export default function App() {
             title="Da entrega ao encaminhamento"
             description="Leitura simples do funil para alinhar marketing, automação e operação comercial."
           />
-          <Funnel stages={dashboard.funil} />
+          <Funnel stages={dashboard.funil} onSelectStage={openDrilldown} />
         </div>
       </section>
 
@@ -1066,19 +1194,34 @@ export default function App() {
         </div>
       </section>
 
-      {drilldownView ? (
-        <EngagedDrilldown
-          eyebrow={DRILLDOWN_META[drilldownView].eyebrow}
-          noun={DRILLDOWN_META[drilldownView].noun}
-          items={filterContacts(drilldownView, dashboard.contatos ?? [])}
-          thread={activeThread}
-          loadingId={threadLoadingId}
-          error={threadError}
-          onSelect={openThread}
-          onBack={backToList}
-          onClose={closeDrilldown}
-        />
-      ) : null}
+      {drilldownView
+        ? (() => {
+            const contatos = dashboard.contatos ?? [];
+            const question = drilldownView === "questionamento" ? selectedQuestion : null;
+            const eyebrow = question
+              ? question.topic || "Questionamento"
+              : DRILLDOWN_META[drilldownView].eyebrow;
+            const noun = question
+              ? `contatos que perguntaram: "${question.question}"`
+              : DRILLDOWN_META[drilldownView].noun;
+            const items = question
+              ? filterByQuestion(contatos, question)
+              : filterContacts(drilldownView, contatos);
+            return (
+              <EngagedDrilldown
+                eyebrow={eyebrow}
+                noun={noun}
+                items={items}
+                thread={activeThread}
+                loadingId={threadLoadingId}
+                error={threadError}
+                onSelect={openThread}
+                onBack={backToList}
+                onClose={closeDrilldown}
+              />
+            );
+          })()
+        : null}
 
       {threadModalOpen ? (
         <ThreadModal
